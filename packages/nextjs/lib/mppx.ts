@@ -137,15 +137,15 @@ const methods: Method.AnyServer[] = [
  * placeholder network and secret key: the route never lets a card credential reach `verify`
  * (see `stripeDemoMode()`) and `/api/pay/token` 503s before it would ever use that key.
  *
- * `html` is still configured in demo mode, with a syntactically valid but unregistered
- * publishable key. mppx's Stripe Elements template mounts the card `iframe` entirely
- * client-side (Stripe.js only calls out to `api.stripe.com` on submit, not on mount), so the
- * browser gets a real Stripe Elements form with no Stripe account required — submitting it
- * fails, same as the rest of the rail in demo mode, but the form itself is not a fake.
+ * `html` is only configured when a real publishable key exists. There is no publishable key
+ * to give mppx's Stripe Elements template in demo mode — a placeholder key just makes
+ * Stripe.js reject it (401, `loaderror`) after mounting a card form that can never submit,
+ * which looks broken rather than intentionally stubbed. Demo mode omits `html` here so mppx
+ * never attempts to build that iframe; the route handler renders its own plain, disabled
+ * demo panel for `Accept: text/html` instead (see `app/api/pay/route.ts`).
  */
 const STRIPE_DEMO_NETWORK_ID = "demo";
 const STRIPE_DEMO_SECRET_KEY = "sk_test_demo00000000000000000000000000000000000000000000";
-const STRIPE_DEMO_PUBLISHABLE_KEY = "pk_test_demo00000000000000000000000000000000000000000000";
 
 methods.push(
   stripeClient
@@ -164,10 +164,6 @@ methods.push(
         secretKey: STRIPE_DEMO_SECRET_KEY,
         networkId: STRIPE_DEMO_NETWORK_ID,
         paymentMethodTypes: ["card"],
-        html: {
-          publishableKey: STRIPE_DEMO_PUBLISHABLE_KEY,
-          createTokenUrl: "/api/pay/token",
-        },
       }),
 );
 
