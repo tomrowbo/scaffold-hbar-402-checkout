@@ -1,0 +1,20 @@
+server:
+  command: yarn next:dev
+  url: http://localhost:3000
+
+routes:
+  - path: /
+    expect:
+      visibleText: ["Checkout"]
+  - path: /checkout
+    expect:
+      visibleText: ["Card", "Hedera", "x402"]
+  - path: /receipt/demo-1
+    expect:
+      visibleText: ["Receipt"]
+
+forbidden:
+  visibleText:
+    - "Application error"
+    - "Unhandled Runtime Error"
+    - "500"

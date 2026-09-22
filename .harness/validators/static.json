@@ -1,31 +1,32 @@
 {
-  "name": "my-feature-static",
-  "description": "Static invariants for the project-centric harness recipe. Adjust required files and text assertions to match your PRD.",
+  "name": "mpp-checkout-static",
+  "description": "Static invariants for the MPP checkout template.",
   "jsonAssertions": [
-    {
-      "file": "package.json",
-      "path": "packageManager",
-      "equals": "yarn@3.2.3"
-    }
+    { "file": "package.json", "path": "packageManager", "equals": "yarn@3.2.3" },
+    { "file": "template.json", "path": "create-scaffold-hbar.defaults.solidityFramework", "equals": "none" }
   ],
   "fileAssertions": {
     "required": [
       "README.md",
       "AGENTS.md",
+      "LICENSE",
       "package.json",
+      "template.json",
       "packages/nextjs/package.json",
+      "packages/nextjs/lib/demo.ts",
+      "packages/nextjs/lib/products.ts",
       ".harness/spec.yaml",
-      ".harness/prd.md"
+      ".harness/prds/01-storefront.md"
     ],
     "forbidden": [
       ".env",
-      "packages/nextjs/.env"
+      "packages/nextjs/.env",
+      "packages/nextjs/app/admin/page.tsx",
+      "packages/nextjs/app/my-proofs/page.tsx",
+      "packages/nextjs/components/ProofWall.tsx"
     ]
   },
   "textAssertions": [
-    {
-      "file": "README.md",
-      "contains": ["yarn install"]
-    }
+    { "file": "README.md", "contains": ["yarn install", "yarn next:dev"] }
   ]
 }

@@ -1,7 +1,12 @@
 schemaVersion: 2
 
-name: my-feature
-description: What you want the agent to build in this project.
+name: mpp-checkout
+description: >
+  A storefront whose single MPP endpoint accepts Stripe card payments and
+  native Hedera USDC through one HTTP 402 challenge, with an x402 route
+  alongside for protocol comparison.
+
+agent: claude
 
 baseline:
   commands:
@@ -9,6 +14,17 @@ baseline:
       command: yarn install
     - name: build
       command: yarn next:build
+
+prd:
+  - .harness/prds/01-storefront.md
+  - .harness/prds/02-hedera-charge.md
+  - .harness/prds/03-stripe-charge.md
+  - .harness/prds/04-x402.md
+
+validators:
+  static: .harness/validators/static.json
+  commands: .harness/validators/yarn.json
+  playwright: .harness/validators/playwright-smoke.yaml
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Everything below is the harness default. Uncomment only to override.
