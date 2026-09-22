@@ -17,9 +17,6 @@ baseline:
 
 prd:
   - .harness/prds/01-storefront.md
-  - .harness/prds/02-hedera-charge.md
-  - .harness/prds/03-stripe-charge.md
-  - .harness/prds/04-x402.md
 
 validators:
   static: .harness/validators/static.json
