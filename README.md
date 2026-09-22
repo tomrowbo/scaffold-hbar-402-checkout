@@ -1,28 +1,24 @@
-# Scaffold-HBAR — Hedera Demo (Proof Wall)
+# Scaffold-HBAR — MPP Checkout
 
-Hedera-native **Next.js-only** demo: post timestamped proofs on **Hedera Consensus Service (HCS)**, browse them on a live feed, and earn **HTS badge tokens** for participation. No Solidity workspace or contract deploy required.
+A merch storefront whose checkout offers three payment rails side by side: **Card** (Stripe), **Hedera** (native settlement) and **x402**. Next.js only — no Solidity workspace, no contract deploy.
 
-CLI key: `hedera-demo` (branch `templates/hedera-demo`).
-
-```
-Wallet connect → Submit HCS message (JSON proof) → Mirror Node feed
-Admin (/admin) → Create topic + HTS badge token → env vars for the app
-```
+**The store runs with no credentials and no `.env` at all.** Clone it, install, start it, and you get a working storefront. Each rail switches itself on independently once its own variables are present, so a developer holding only Stripe keys gets a live card path and demo stubs everywhere else.
 
 General Scaffold-HBAR docs: [Scaffold HBAR on Hedera](https://docs.hedera.com/solutions/tools/scaffold-hbar/index).
 
 ## What's in this template
 
 - **Next.js only** — no `packages/hardhat` or `packages/foundry`
-- **Proof Wall** at `/` — submit and browse HCS messages on a configured topic
-- **My proofs** at `/my-proofs` — filter feed by connected account; badge display
-- **Admin** at `/admin` — create HCS topic and HTS badge token via wallet-signed transactions
-- Server routes under `packages/nextjs/app/api/hedera/` for Mirror Node and operator helpers
+- **Store** at `/` — a four-item fixture catalogue, each item linking to checkout
+- **Checkout** at `/checkout` — Card, Hedera and x402 options, each disabled with a demo-mode note until its credentials are set
+- **Receipt** at `/receipt/[id]` — an unknown reference renders a demo receipt rather than a 404
+- **Per-integration detection** in `packages/nextjs/lib/demo.ts`
+- Wallet connect, theming and the Scaffold-HBAR component stack, unchanged
 
 Create a project:
 
 ```bash
-npm create scaffold-hbar@latest -- --template hedera-demo
+npm create scaffold-hbar@latest -- --template mpp-checkout
 ```
 
 ## Quick start
@@ -31,23 +27,31 @@ npm create scaffold-hbar@latest -- --template hedera-demo
 
 - Node.js ≥ 20.18.3, Git
 - Yarn (this template is Yarn-only)
-- [WalletConnect project ID](https://cloud.reown.com) (Reown / WalletConnect Cloud)
-- Hedera testnet account — fund via [portal.hedera.com](https://portal.hedera.com/faucet)
+
+No credentials are required to run the store.
 
 ### Install and run
 
 ```bash
 yarn install
-
-cp packages/nextjs/.env.example packages/nextjs/.env
-# Set NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID (required)
-
 yarn next:dev    # http://localhost:3000
 ```
 
-1. Open **Admin** (`/admin`), connect wallet, create a topic (and optionally a badge token).
-2. Copy topic ID into `NEXT_PUBLIC_PROOF_WALL_TOPIC_ID` (and badge token into `NEXT_PUBLIC_PROOF_WALL_BADGE_TOKEN_ID` if created).
-3. Restart dev server, post a proof on the home page.
+Browse the catalogue, pick an item, and walk through checkout. Every rail renders in demo mode until you configure it.
+
+### Enabling a rail
+
+Copy `packages/nextjs/.env.example` to `packages/nextjs/.env` and fill in only the rails you want. The predicates in `lib/demo.ts` are independent — setting one group never stubs out another.
+
+| Rail | Variables | Predicate |
+|---|---|---|
+| Card | `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_NETWORK_ID` | `hasStripe()` |
+| Hedera | `HEDERA_OPERATOR_ID`, `HEDERA_OPERATOR_KEY` | `hasHedera()` |
+| x402 | `AX402_FACILITATOR_URL` | `hasX402()` |
+
+Wallet connection additionally uses `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID` ([Reown / WalletConnect Cloud](https://cloud.reown.com)).
+
+Payment logic itself lands in a later increment — this one is the storefront shell.
 
 ## Scripts
 
@@ -61,7 +65,10 @@ yarn next:dev    # http://localhost:3000
 
 ## Project layout
 
-- **packages/nextjs** — App Router UI, Hedera SDK + wallet connect, Mirror Node API routes, Proof Wall components
+- **packages/nextjs/app** — App Router routes: `/`, `/checkout`, `/receipt/[id]`
+- **packages/nextjs/lib** — `demo.ts` (per-rail credential detection), `products.ts` (fixture catalogue)
+- **packages/nextjs/components** — storefront components plus the Scaffold-HBAR wallet and theme stack
+- **packages/nextjs/public/products** — local SVG placeholders; nothing is fetched remotely
 
 ## Links
 

@@ -1,19 +1,18 @@
-"use client";
-
-import { useState } from "react";
 import Image from "next/image";
-import { ProofWall } from "~~/components/ProofWall";
-import { SubmitProofForm } from "~~/components/SubmitProofForm";
-import { TopicSelector } from "~~/components/TopicSelector";
-import { proofWallConfig } from "~~/config/proofWallConfig";
-import { useTopicMessages } from "~~/hooks/useTopicMessages";
+import { ProductCard } from "~~/components/ProductCard";
+import { hasHedera, hasStripe, hasX402 } from "~~/lib/demo";
+import { products } from "~~/lib/products";
 
-export default function ProofWallPage() {
-  const [topicId, setTopicId] = useState(proofWallConfig.topicId);
-  const effectiveTopicId = topicId || proofWallConfig.topicId;
-  const { data, isLoading, error, refetch, onNewMessage } = useTopicMessages(effectiveTopicId, {
-    refetchInterval: 15_000,
-  });
+// Rail status is read from the running process's environment, so a developer who adds
+// keys and restarts sees the change without a rebuild.
+export const dynamic = "force-dynamic";
+
+export default function StorePage() {
+  const rails = [
+    { label: "Card", enabled: hasStripe() },
+    { label: "Hedera", enabled: hasHedera() },
+    { label: "x402", enabled: hasX402() },
+  ];
 
   return (
     <div className="flex flex-col grow">
@@ -21,10 +20,10 @@ export default function ProofWallPage() {
         <header className="hero rounded-2xl hedera-gradient text-white shadow-lg mb-6 sm:mb-8 overflow-hidden">
           <div className="hero-content w-full flex-col md:flex-row items-start md:items-center justify-between gap-4 py-7 sm:py-8">
             <div>
-              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight m-0">Proof Wall</h1>
+              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight m-0">Hedera Merch Store</h1>
               <p className="text-white/90 mt-2 mb-0 max-w-2xl">
-                Post a timestamped proof on Hedera. Every message is an HCS consensus message — permanent and verifiable
-                on HashScan.
+                Pick an item and go to Checkout. Card, Hedera and x402 sit side by side behind one payment endpoint —
+                each switches on independently when you add its credentials.
               </p>
             </div>
             <Image
@@ -38,53 +37,19 @@ export default function ProofWallPage() {
         </header>
 
         <div className="stats stats-vertical sm:stats-horizontal w-full shadow-sm border border-base-300 bg-base-100 mb-6">
-          <div className="stat">
-            <div className="stat-title">Network</div>
-            <div className="stat-value text-base sm:text-lg">Hedera Testnet</div>
-          </div>
-          <div className="stat">
-            <div className="stat-title">Topic</div>
-            <div className="stat-value text-sm font-mono">{effectiveTopicId || "Not configured"}</div>
-          </div>
+          {rails.map(({ label, enabled }) => (
+            <div className="stat" key={label}>
+              <div className="stat-title">{label}</div>
+              <div className="stat-value text-base sm:text-lg">{enabled ? "Live" : "Demo mode"}</div>
+            </div>
+          ))}
         </div>
 
-        <div className="card border border-base-300 bg-base-100 shadow-sm mb-6">
-          <div className="card-body py-5">
-            <h2 className="card-title text-base">Active Topic</h2>
-            <TopicSelector topicId={effectiveTopicId} onTopicIdChange={setTopicId} />
-          </div>
-        </div>
-
-        {effectiveTopicId ? (
-          <>
-            <section className="mt-6" aria-label="Submit a proof">
-              <SubmitProofForm
-                topicId={effectiveTopicId}
-                onSuccess={result => onNewMessage(result.sequenceNumber ? Number(result.sequenceNumber) : undefined)}
-              />
-            </section>
-            <div className="divider my-8 text-base-content/60">Recent proofs</div>
-            <section aria-label="Proof feed">
-              <ProofWall
-                messages={data?.messages ?? []}
-                isLoading={isLoading}
-                error={error ?? null}
-                onRetry={() => void refetch()}
-              />
-            </section>
-          </>
-        ) : (
-          <div className="mt-6 alert alert-warning shadow-sm">
-            <span>
-              Set <code className="text-sm bg-base-300 px-1.5 py-0.5 rounded">NEXT_PUBLIC_PROOF_WALL_TOPIC_ID</code> or
-              create a topic in the{" "}
-              <a href="/admin" className="link link-primary font-medium">
-                Admin
-              </a>{" "}
-              page.
-            </span>
-          </div>
-        )}
+        <section aria-label="Products" className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          {products.map(product => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </section>
       </div>
     </div>
   );

@@ -46,10 +46,6 @@
             {
               "label": "Enable x402",
               "text": "Set AX402_FACILITATOR_URL to compare the x402 flow against MPP on the same store."
-            },
-            {
-              "label": "Read the comparison",
-              "text": "docs/mpp-vs-x402.md explains how the two protocols differ against an identical checkout."
             }
           ]
         }
