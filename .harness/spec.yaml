@@ -16,7 +16,9 @@ baseline:
       command: yarn next:build
 
 prd:
-  - .harness/prds/01-storefront.md
+  # Only the increment about to run. 01-storefront is already delivered and
+  # merged into main; a prd list delivers EVERY entry, so leaving it here would
+  # make the harness redo it. The file stays on disk for the record.
   - .harness/prds/02-hedera-charge.md
 
 validators:
