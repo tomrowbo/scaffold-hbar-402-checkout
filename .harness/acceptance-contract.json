@@ -33,6 +33,22 @@
       "walletRequired": true,
       "verifiableWithoutCredentials": false,
       "executableWithTestSigner": true
+    },
+    {
+      "id": "C5",
+      "statement": "A single 402 challenge advertises both the hedera and stripe methods.",
+      "howToVerify": "Request /api/pay?product=tee with Accept: application/json and confirm the WWW-Authenticate header contains two Payment challenges, one with method=\"hedera\" and one with method=\"stripe\".",
+      "severity": "critical",
+      "walletRequired": false,
+      "verifiableWithoutCredentials": true
+    },
+    {
+      "id": "C6",
+      "statement": "Requesting the pay endpoint from a browser renders a Stripe Elements card form rather than raw JSON.",
+      "howToVerify": "Navigate to /api/pay?product=tee in the browser with Accept: text/html and confirm a card input is rendered.",
+      "severity": "major",
+      "walletRequired": false,
+      "verifiableWithoutCredentials": false
     }
   ]
 }
