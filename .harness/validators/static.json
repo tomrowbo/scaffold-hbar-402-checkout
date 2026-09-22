@@ -16,17 +16,57 @@
       "packages/nextjs/lib/demo.ts",
       "packages/nextjs/lib/products.ts",
       ".harness/spec.yaml",
-      ".harness/prds/01-storefront.md"
+      ".harness/prds/01-storefront.md",
+      "packages/nextjs/components/Header.tsx",
+      "packages/nextjs/components/Footer.tsx",
+      "packages/nextjs/components/SwitchTheme.tsx",
+      "packages/nextjs/components/ThemeProvider.tsx",
+      "packages/nextjs/components/ScaffoldHbarAppWithProviders.tsx",
+      "packages/nextjs/components/scaffold-hbar/index.tsx",
+      "packages/nextjs/components/scaffold-hbar/BlockieAvatar.tsx",
+      "packages/nextjs/components/scaffold-hbar/WalletConnectButton/index.tsx"
     ],
     "forbidden": [
       ".env",
       "packages/nextjs/.env",
       "packages/nextjs/app/admin/page.tsx",
       "packages/nextjs/app/my-proofs/page.tsx",
-      "packages/nextjs/components/ProofWall.tsx"
+      "packages/nextjs/app/api/hedera/account/route.ts",
+      "packages/nextjs/app/api/hedera/airdrop/route.ts",
+      "packages/nextjs/app/api/hedera/check-badge/route.ts",
+      "packages/nextjs/app/api/hedera/create-token/route.ts",
+      "packages/nextjs/app/api/hedera/create-topic/route.ts",
+      "packages/nextjs/app/api/hedera/evm-address/route.ts",
+      "packages/nextjs/app/api/hedera/operator-status/route.ts",
+      "packages/nextjs/app/api/hedera/submit-message/route.ts",
+      "packages/nextjs/app/api/hedera/token-balance/route.ts",
+      "packages/nextjs/app/api/hedera/token-id-by-transaction/route.ts",
+      "packages/nextjs/app/api/hedera/topic-id-by-transaction/route.ts",
+      "packages/nextjs/app/api/hedera/topic-messages/route.ts",
+      "packages/nextjs/components/BadgeDisplay.tsx",
+      "packages/nextjs/components/ProofCard.tsx",
+      "packages/nextjs/components/ProofWall.tsx",
+      "packages/nextjs/components/SubmitProofForm.tsx",
+      "packages/nextjs/components/TopicSelector.tsx"
     ]
   },
   "textAssertions": [
-    { "file": "README.md", "contains": ["yarn install", "yarn next:dev"] }
+    { "file": "README.md", "contains": ["yarn install", "yarn next:dev"] },
+    {
+      "file": "packages/nextjs/lib/demo.ts",
+      "contains": [
+        "export function hasHedera",
+        "export function hasStripe",
+        "export function hasX402",
+        "HEDERA_OPERATOR_ID",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_NETWORK_ID",
+        "AX402_FACILITATOR_URL"
+      ]
+    },
+    {
+      "file": "packages/nextjs/lib/products.ts",
+      "contains": ["export const products", "priceUsd"]
+    }
   ]
 }
