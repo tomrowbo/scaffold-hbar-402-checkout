@@ -1,0 +1,38 @@
+{
+  "assertions": [
+    {
+      "id": "C1",
+      "statement": "The storefront loads and shows four products with no credentials configured.",
+      "howToVerify": "Open /. Confirm four product cards render and no error banner is visible.",
+      "severity": "critical",
+      "walletRequired": false,
+      "verifiableWithoutCredentials": true
+    },
+    {
+      "id": "C2",
+      "statement": "Requesting the pay endpoint without payment returns HTTP 402 with a WWW-Authenticate: Payment header naming the hedera method.",
+      "howToVerify": "Request /api/pay?product=tee with Accept: application/json. Confirm status 402 and that the WWW-Authenticate header contains method=\"hedera\" and intent=\"charge\".",
+      "severity": "critical",
+      "walletRequired": false,
+      "verifiableWithoutCredentials": true
+    },
+    {
+      "id": "C3",
+      "statement": "A funded test signer completes a USDC charge on Hedera testnet and the endpoint then returns 200 with a Payment-Receipt header.",
+      "howToVerify": "Drive the Hedera checkout path in the browser with the injected burner wallet, then confirm the mirror node records the token transfer and the retried request returns 200 carrying Payment-Receipt.",
+      "severity": "critical",
+      "walletRequired": true,
+      "verifiableWithoutCredentials": false,
+      "executableWithTestSigner": true
+    },
+    {
+      "id": "C4",
+      "statement": "The receipt page shows the settled payment with a Hashscan link to the transaction.",
+      "howToVerify": "After C3, open the receipt page and confirm a hashscan.io/testnet link is present and points at the settling transaction.",
+      "severity": "major",
+      "walletRequired": true,
+      "verifiableWithoutCredentials": false,
+      "executableWithTestSigner": true
+    }
+  ]
+}

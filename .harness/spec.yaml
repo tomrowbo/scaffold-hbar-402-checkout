@@ -17,11 +17,28 @@ baseline:
 
 prd:
   - .harness/prds/01-storefront.md
+  - .harness/prds/02-hedera-charge.md
 
 validators:
   static: .harness/validators/static.json
   commands: .harness/validators/yarn.json
   playwright: .harness/validators/playwright-smoke.yaml
+
+contract: .harness/acceptance-contract.json
+validator:
+  enabled: true
+
+chainValidation:
+  enabled: true
+  network: testnet
+  operator:
+    accountIdEnv: HEDERA_OPERATOR_ID
+    privateKeyEnv: HEDERA_OPERATOR_KEY
+  fundingHbar: 10
+  sweepBack: true
+  expose:
+    browserLocalStorageKey: burnerWallet.pk
+    envVars: []
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Everything below is the harness default. Uncomment only to override.
