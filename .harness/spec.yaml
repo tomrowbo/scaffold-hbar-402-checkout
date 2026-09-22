@@ -16,11 +16,11 @@ baseline:
       command: yarn next:build
 
 prd:
-  # Only the increment about to run. 01-storefront and 02-hedera-charge are
-  # already delivered and merged into main; a prd list delivers EVERY entry,
-  # so leaving them here would make the harness redo delivered work. The
-  # files stay on disk for the record.
-  - .harness/prds/03-stripe-charge.md
+  # Only the increment about to run. 01-storefront, 02-hedera-charge and
+  # 03-stripe-charge are already delivered on this branch; a prd list
+  # delivers EVERY entry, so leaving them here would make the harness redo
+  # delivered work. The files stay on disk for the record.
+  - .harness/prds/04-x402.md
 
 validators:
   static: .harness/validators/static.json
