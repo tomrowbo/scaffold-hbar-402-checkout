@@ -37,7 +37,7 @@ These read server-only variables, so call them from server components or route h
 | `/` | Store — fixture product grid, each item linking to checkout |
 | `/checkout` | Card, Hedera and x402 payment options; each disabled in demo mode |
 | `/receipt/[id]` | Receipt view; an unknown id renders a demo receipt, not a 404 |
-| `/api/pay` | One MPP 402 advertising `hedera` and, when `hasStripe()`, `stripe`; HTML card form for browsers |
+| `/api/pay` | One MPP 402 advertising **both** `hedera` and `stripe`, always. HTML for browsers: a real Stripe Elements form when `hasStripe()`, otherwise a disabled `demo mode` panel |
 | `/api/pay/token` | Mints a Stripe Shared Payment Token for the card form; 503 in demo mode |
 | `/api/testnet/fund` | Test-buyer USDC faucet; 403 unless the resolved network is testnet |
 
@@ -45,6 +45,11 @@ These read server-only variables, so call them from server components or route h
 
 - `HEDERA_NETWORK` (`testnet` default, or `mainnet`) is read only through `resolvedNetwork()` in `lib/hederaOperator.ts`. `lib/mppx.ts` derives USDC id, Mirror Node and chain id from it.
 - `/api/testnet/fund` checks `resolvedNetwork() === "testnet"` itself, before anything else. Keep that check in the handler.
+- The `stripe` rail is advertised in the 402 even in demo mode (its `networkId` reads
+  `demo`). This is deliberate: one challenge carrying both card and Hedera is the point
+  of this template, and dropping the card rail without credentials would hide that from
+  anyone running it unconfigured. Demo mode is made honest in the UI — the browser page
+  renders a disabled `demo mode` panel — not by removing the offer.
 - `lib/mppx.ts` throws at module load when the insecure default `MPP_SECRET_KEY` would be used on mainnet or with a live Stripe key.
 - Import Stripe's method from `mppx/stripe/server/spt` and `Mppx` from `mppx/server/core`. The plain `mppx/server` and `mppx/stripe/server` entry points pull in Tempo, which fails to load against the pinned viem.
 
