@@ -1,0 +1,59 @@
+{
+  "name": "mpp-checkout",
+  "description": "One MPP endpoint accepting Stripe card, native Hedera USDC, and x402 side by side.",
+  "create-scaffold-hbar": {
+    "capabilities": {
+      "frontend": ["nextjs-app"],
+      "solidityFramework": ["none"],
+      "packageManager": ["yarn"]
+    },
+    "defaults": {
+      "frontend": "nextjs-app",
+      "solidityFramework": "none",
+      "packageManager": "yarn"
+    },
+    "outro": {
+      "sections": [
+        {
+          "steps": [
+            {
+              "text": "Payments settle with native Hedera services. No contract deploy is required to run this template."
+            },
+            {
+              "text": "The store runs with no credentials at all. Each payment rail switches on independently when you add its keys."
+            }
+          ]
+        },
+        {
+          "title": "Suggested steps",
+          "steps": [
+            {
+              "label": "Start the store",
+              "command": "{run:next:dev}"
+            },
+            {
+              "label": "Browse the demo",
+              "text": "Open http://localhost:3000 and go through checkout. Every rail renders in demo mode until you configure it."
+            },
+            {
+              "label": "Enable Hedera USDC",
+              "text": "Set HEDERA_OPERATOR_ID and HEDERA_OPERATOR_KEY in packages/nextjs/.env to settle real testnet payments."
+            },
+            {
+              "label": "Enable card payments",
+              "text": "Set STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY and STRIPE_NETWORK_ID to accept cards through the same 402 challenge."
+            },
+            {
+              "label": "Enable x402",
+              "text": "Set AX402_FACILITATOR_URL to compare the x402 flow against MPP on the same store."
+            },
+            {
+              "label": "Read the comparison",
+              "text": "docs/mpp-vs-x402.md explains how the two protocols differ against an identical checkout."
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
