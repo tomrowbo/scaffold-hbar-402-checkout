@@ -2310,6 +2310,8 @@ __metadata:
     eslint-config-prettier: ^10.1.1
     eslint-plugin-prettier: ^5.2.4
     ethers: ^6.16.0
+    mppx: 0.10.1
+    mppx-hedera: 0.2.2
     next: ^15.2.8
     next-nprogress-bar: ^2.3.13
     next-themes: ^0.3.0
@@ -3120,6 +3122,13 @@ __metadata:
     uri-js: ^4.4.1
     valid-url: ^1.0.9
   checksum: 99365956bd5e35127568e7ee69246cfc79cc26d83f6fbc5e3a9ed6f0693f7da6f2ee67cf8b93b65761da3c3ce8cc156858bab85e24b2eadd49ec8ae07cb8826e
+  languageName: node
+  linkType: hard
+
+"@stripe/stripe-js@npm:9.13.0":
+  version: 9.13.0
+  resolution: "@stripe/stripe-js@npm:9.13.0"
+  checksum: b5ac5e83528d743f116b139720610959ba4aafa5071bff076d2d2d2238a946a440d4a9763ea25d437d57dd08f41b54c2d33a1a62cd0f520ac340f8610f060039
   languageName: node
   linkType: hard
 
@@ -6259,6 +6268,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"eventsource-parser@npm:3.1.1":
+  version: 3.1.1
+  resolution: "eventsource-parser@npm:3.1.1"
+  checksum: ab220722d2ae82818b92e0d92a2fd333102f384a0314190ad1d469dc9598ade8047bb83644e3b09f7766becbda9b84a265508b66272aa57d8c76d2afd5c29fa8
+  languageName: node
+  linkType: hard
+
 "evp_bytestokey@npm:^1.0.0, evp_bytestokey@npm:^1.0.3":
   version: 1.0.3
   resolution: "evp_bytestokey@npm:1.0.3"
@@ -8203,6 +8219,65 @@ __metadata:
   languageName: node
   linkType: hard
 
+"mppx-hedera@npm:0.2.2":
+  version: 0.2.2
+  resolution: "mppx-hedera@npm:0.2.2"
+  peerDependencies:
+    "@hiero-ledger/sdk": ">=2.50.0"
+    mppx: ">=0.5.9"
+    viem: ">=2.21.0"
+  checksum: 6fc8d430a297c3477861412add341af0b53300d362928c3a2f3a3b0cfae12f409d7813fe03d6aaa911ca8a37eb8aa72984a5d00ec90e2e1e929f5493b798c17a
+  languageName: node
+  linkType: hard
+
+"mppx@npm:0.10.1":
+  version: 0.10.1
+  resolution: "mppx@npm:0.10.1"
+  dependencies:
+    "@stripe/stripe-js": 9.13.0
+    eventsource-parser: 3.1.1
+    ox: 0.14.33
+    structured-headers: 2.0.3
+    zod: ^4.4.3
+  peerDependencies:
+    "@modelcontextprotocol/sdk": ">=1.25.0"
+    "@x402/core": ">=2.22.0"
+    "@x402/express": ">=2.22.0"
+    "@x402/hono": ">=2.22.0"
+    "@x402/mcp": ">=2.22.0"
+    "@x402/next": ">=2.22.0"
+    elysia: ">=1"
+    express: ">=5"
+    hono: ">=4.12.25"
+    next: ">=16.2.6"
+    viem: ">=2.54.0"
+  peerDependenciesMeta:
+    "@modelcontextprotocol/sdk":
+      optional: true
+    "@x402/core":
+      optional: true
+    "@x402/express":
+      optional: true
+    "@x402/hono":
+      optional: true
+    "@x402/mcp":
+      optional: true
+    "@x402/next":
+      optional: true
+    elysia:
+      optional: true
+    express:
+      optional: true
+    hono:
+      optional: true
+    next:
+      optional: true
+  bin:
+    mppx: ./dist/bin.js
+  checksum: 91fee3b6a8a4445da7e0bcc5e2aa3719dfe1ee6e2f6578215e4e73986fa929ff23a19dfa8a48b07e5a7c9334d731ffe4039c6dc07029a862c74860b853bcdfa0
+  languageName: node
+  linkType: hard
+
 "ms@npm:^2.0.0, ms@npm:^2.1.1, ms@npm:^2.1.3":
   version: 2.1.3
   resolution: "ms@npm:2.1.3"
@@ -8628,6 +8703,27 @@ __metadata:
     typescript:
       optional: true
   checksum: 22ada789c2a069294c50500e1e6c116e8fbe86e270d93a2e6f4d4ebcf50d45f1aebfcfa6617c8ed20c61948887e9a3a9542a1fcf63d71c5e55f88d600b757049
+  languageName: node
+  linkType: hard
+
+"ox@npm:0.14.33":
+  version: 0.14.33
+  resolution: "ox@npm:0.14.33"
+  dependencies:
+    "@adraffy/ens-normalize": ^1.11.0
+    "@noble/ciphers": ^1.3.0
+    "@noble/curves": 1.9.1
+    "@noble/hashes": ^1.8.0
+    "@scure/bip32": ^1.7.0
+    "@scure/bip39": ^1.6.0
+    abitype: ^1.2.3
+    eventemitter3: 5.0.1
+  peerDependencies:
+    typescript: ">=5.4.0"
+  peerDependenciesMeta:
+    typescript:
+      optional: true
+  checksum: bfc5bc8aa28f39b8ce715125bff46e86c73142a7aed1a585893c01326fbb5b0f9474d96815c80647b42e92ef1e28fd9e8dec275d93cf4526f5ce4c38f4a231f5
   languageName: node
   linkType: hard
 
@@ -10212,6 +10308,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"structured-headers@npm:2.0.3":
+  version: 2.0.3
+  resolution: "structured-headers@npm:2.0.3"
+  checksum: 92f46a9fa227d31b98090896c9b322076b09eec90b1443337063562983f455e49181c2f75e228d60dab8e7c9d32d406ec7293bb15b0955614d55af8a3a9a1f61
+  languageName: node
+  linkType: hard
+
 "styled-jsx@npm:5.1.6":
   version: 5.1.6
   resolution: "styled-jsx@npm:5.1.6"
@@ -11306,6 +11409,13 @@ __metadata:
   version: 3.25.76
   resolution: "zod@npm:3.25.76"
   checksum: c9a403a62b329188a5f6bd24d5d935d2bba345f7ab8151d1baa1505b5da9f227fb139354b043711490c798e91f3df75991395e40142e6510a4b16409f302b849
+  languageName: node
+  linkType: hard
+
+"zod@npm:^4.4.3":
+  version: 4.6.5
+  resolution: "zod@npm:4.6.5"
+  checksum: bc73aaee52bc9137bae3f5bf9b49f4475223c24be86d81881856dd26696cb693d1a3f51d9cf5c86c6f9b081316557673806d00ab3a0f244c9576ff39a11ae6ea
   languageName: node
   linkType: hard
 
