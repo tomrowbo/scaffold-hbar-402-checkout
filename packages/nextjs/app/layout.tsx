@@ -5,8 +5,8 @@ import "~~/styles/globals.css";
 import { getMetadata } from "~~/utils/scaffold-hbar/getMetadata";
 
 export const metadata = getMetadata({
-  title: "Proof Wall",
-  description: "Hedera Native Demo — timestamped proofs on HCS",
+  title: "Hedera Merch Store",
+  description: "A storefront where card, native Hedera and x402 payments sit behind one checkout",
 });
 
 const ScaffoldHbarApp = ({ children }: { children: React.ReactNode }) => {

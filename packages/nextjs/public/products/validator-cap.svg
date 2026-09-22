@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="Validator Cap">
+  <defs>
+    <linearGradient id="capBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8259ef" />
+      <stop offset="100%" stop-color="#0031ff" />
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#capBg)" />
+  <path fill="#ffffff" fill-opacity="0.92" d="M112 240 a88 88 0 0 1 176 0 z" />
+  <path fill="#ffffff" fill-opacity="0.75" d="M100 240 h200 a34 34 0 0 1 -34 34 h-132 a34 34 0 0 1 -34 -34 z" />
+  <path
+    fill="none"
+    stroke="#0031ff"
+    stroke-width="14"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    d="M172 196 l20 22 l40 -46"
+  />
+</svg>

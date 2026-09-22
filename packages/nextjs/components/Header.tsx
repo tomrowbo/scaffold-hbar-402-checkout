@@ -4,7 +4,7 @@ import React, { useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bars3Icon, ChatBubbleLeftIcon, Cog6ToothIcon, UserCircleIcon } from "@heroicons/react/24/outline";
+import { Bars3Icon, BuildingStorefrontIcon, CreditCardIcon } from "@heroicons/react/24/outline";
 import { WalletConnectButton } from "~~/components/scaffold-hbar";
 import { useOutsideClick } from "~~/hooks/scaffold-hbar";
 
@@ -16,19 +16,14 @@ type HeaderMenuLink = {
 
 export const menuLinks: HeaderMenuLink[] = [
   {
-    label: "Proof Wall",
+    label: "Store",
     href: "/",
-    icon: <ChatBubbleLeftIcon className="h-4 w-4" />,
+    icon: <BuildingStorefrontIcon className="h-4 w-4" />,
   },
   {
-    label: "My Proofs",
-    href: "/my-proofs",
-    icon: <UserCircleIcon className="h-4 w-4" />,
-  },
-  {
-    label: "Admin",
-    href: "/admin",
-    icon: <Cog6ToothIcon className="h-4 w-4" />,
+    label: "Checkout",
+    href: "/checkout",
+    icon: <CreditCardIcon className="h-4 w-4" />,
   },
 ];
 
@@ -90,9 +85,9 @@ export const Header = () => {
             <Image alt="Hedera icon" className="cursor-pointer hidden dark:block" fill src="/Hedera-Icon-White.svg" />
           </div>
           <div className="flex flex-col">
-            <span className="font-bold leading-tight text-base">Proof Wall</span>
+            <span className="font-bold leading-tight text-base">Hedera Merch</span>
             <span className="hidden md:block text-[10px] tracking-wider uppercase text-base-content/50 font-medium">
-              Wallet-Signed Hedera Demo
+              One Endpoint, Three Payment Rails
             </span>
           </div>
         </Link>
