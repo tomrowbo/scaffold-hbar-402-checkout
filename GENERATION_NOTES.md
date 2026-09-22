@@ -98,3 +98,22 @@ env. Dev-server probes:
 - Mainnet with a secret: challenge on chain 295 with token `0.0.456858`, faucet 403.
 - A live Stripe key with no secret fails at load.
 - `HEDERA_NETWORK=mainet` fails at load.
+
+## Repair attempt 2: C5, C6
+
+Fixed **C5** and **C6** (contract: C5 must be verifiable without credentials).
+- `lib/mppx.ts`: the `stripe` method is always registered. With no Stripe keys it is a
+  placeholder offer (`networkId: "demo"`, no client, no `html`). `charge()` always composes
+  `hedera/charge` + `stripe/charge`, so the 402 always carries `method="hedera"` and
+  `method="stripe"`. New `stripeDemoMode()` export. The token route is unchanged and still
+  returns 503 in demo mode.
+- `app/api/pay/route.ts`: in card demo mode a `stripe` credential is stripped, just as
+  Hedera demo credentials are, so the placeholder never reaches Stripe `verify`. It gets a
+  fresh challenge instead. Browsers (`Accept: text/html`) get a 402 HTML page with a
+  disabled card form (card number, expiry, CVC) and a demo-mode note. It keeps the same
+  `WWW-Authenticate` header and `X-MPP-Demo-Mode`. With real Stripe keys, mppx still serves
+  the live Stripe Elements page.
+- This supersedes the earlier "C5 holds only with Stripe keys" deviation.
+- Verified with an empty env on the dev server: JSON 402 has both methods, the HTML 402
+  renders `#card-number`, `/`, `/checkout` and `/receipt/demo-1` return 200, and
+  `/api/pay/token` returns 503. `yarn next:check-types` and `yarn lint` pass.

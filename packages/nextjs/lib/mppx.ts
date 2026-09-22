@@ -1,6 +1,6 @@
 /**
  * Machine Payments Protocol server for the checkout: one 402 challenge advertising the
- * native Hedera USDC charge and, when Stripe is configured, a Stripe card charge.
+ * native Hedera USDC charge and a Stripe card charge (a placeholder offer in demo mode).
  *
  * Server-only: this module reads unprefixed environment variables and instantiates a
  * long-lived MPP handler, so import it from route handlers and server components only.
@@ -132,20 +132,36 @@ const methods: Method.AnyServer[] = [
   }),
 ];
 
-if (stripeClient) {
-  methods.push(
-    stripe.charge({
-      client: stripeClient,
-      networkId: process.env.STRIPE_NETWORK_ID!.trim(),
-      paymentMethodTypes: ["card"],
-      // Browsers (`Accept: text/html`) get a Stripe Elements card form on the same URL;
-      // agents get the challenge JSON. The form mints its SPT through `createTokenUrl`.
-      html: {
-        publishableKey: process.env.STRIPE_PUBLISHABLE_KEY!.trim(),
-        createTokenUrl: "/api/pay/token",
-      },
-    }),
-  );
+/**
+ * The card offer is always advertised so one 402 names both rails. In demo mode it carries a
+ * placeholder network and no Stripe client: the route never lets a card credential reach
+ * `verify` (see `stripeDemoMode()`), and browsers get a disabled demo card form instead.
+ */
+const STRIPE_DEMO_NETWORK_ID = "demo";
+
+methods.push(
+  stripeClient
+    ? stripe.charge({
+        client: stripeClient,
+        networkId: process.env.STRIPE_NETWORK_ID!.trim(),
+        paymentMethodTypes: ["card"],
+        // Browsers (`Accept: text/html`) get a Stripe Elements card form on the same URL;
+        // agents get the challenge JSON. The form mints its SPT through `createTokenUrl`.
+        html: {
+          publishableKey: process.env.STRIPE_PUBLISHABLE_KEY!.trim(),
+          createTokenUrl: "/api/pay/token",
+        },
+      })
+    : stripe.charge({
+        secretKey: "",
+        networkId: STRIPE_DEMO_NETWORK_ID,
+        paymentMethodTypes: ["card"],
+      }),
+);
+
+/** True when the advertised card offer is a placeholder that cannot settle. */
+export function stripeDemoMode(): boolean {
+  return !stripeClient;
 }
 
 export const mppx = Mppx.create({
@@ -178,8 +194,8 @@ type Handler = (request: Request) => Promise<ChargeResult>;
 /**
  * Narrow façade over the generated mppx handlers.
  *
- * With Stripe configured both methods share the `charge` intent, so they are composed into
- * one 402 carrying a `WWW-Authenticate: Payment` challenge per method. Each gets its own
+ * Both methods share the `charge` intent, so they are composed into one 402 carrying a
+ * `WWW-Authenticate: Payment` challenge per method. Each gets its own
  * options — the Hedera offer is in USDC base units, the card offer in cents — which the
  * implicit `mppx.charge` shorthand cannot express.
  *
@@ -189,11 +205,8 @@ type Handler = (request: Request) => Promise<ChargeResult>;
  */
 export function charge(options: ChargeOptions): Handler {
   const handlers = mppx as unknown as {
-    "hedera/charge": (options: ChargeOptions) => Handler;
     compose: (...entries: [string, Record<string, unknown>][]) => Handler;
   };
-  if (!stripeClient) return handlers["hedera/charge"](options);
-
   return handlers.compose(
     ["hedera/charge", options],
     [
