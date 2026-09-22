@@ -6,9 +6,13 @@
  * to spend. Testnet only, and inert unless the server holds operator credentials. It is a
  * development aid, not part of the payment protocol: no real value moves and nothing here
  * runs on mainnet.
+ *
+ * The network check is the first thing the handler does and reads `resolvedNetwork()`
+ * directly. This route transfers operator USDC to any posted account id, so on mainnet it
+ * would be an unauthenticated drain — no configuration may turn it on there.
  */
 import { AccountId, TokenAssociateTransaction, TokenId, Transaction, TransferTransaction } from "@hiero-ledger/sdk";
-import { operatorClient } from "~~/lib/hederaOperator";
+import { operatorClient, resolvedNetwork } from "~~/lib/hederaOperator";
 import { MIRROR_NODE_URL, USDC_DECIMALS, USDC_TOKEN_ID, canSettle } from "~~/lib/mppx";
 import { products } from "~~/lib/products";
 
@@ -38,6 +42,19 @@ async function usdcBalance(accountId: string): Promise<bigint> {
 type FundBody = { accountId?: string; associateTransaction?: string };
 
 export async function POST(request: Request): Promise<Response> {
+  let network: string;
+  try {
+    network = resolvedNetwork();
+  } catch {
+    network = "invalid";
+  }
+  if (network !== "testnet") {
+    return Response.json(
+      { error: "faucet_disabled", detail: "The test-buyer faucet only runs on Hedera testnet." },
+      { status: 403 },
+    );
+  }
+
   if (!canSettle()) {
     return Response.json(
       { error: "demo_mode", detail: "Set HEDERA_OPERATOR_ID and HEDERA_OPERATOR_KEY to fund a test buyer." },

@@ -1,11 +1,14 @@
 /**
- * Native Hedera USDC charge endpoint.
+ * Checkout charge endpoint: one 402 for every configured rail.
  *
  * Unpaid requests answer 402 with a `WWW-Authenticate: Payment` challenge naming
- * `method="hedera", intent="charge"`. The buyer transfers USDC on Hedera with the 32-byte
- * attribution memo from the challenge and retries with `Authorization: Payment <credential>`;
- * mppx-hedera then confirms the transfer against the Mirror Node before this route returns
- * 200 with a `Payment-Receipt` header.
+ * `method="hedera", intent="charge"`, plus a `method="stripe"` challenge when Stripe is
+ * configured. Browsers (`Accept: text/html`) get Stripe's card form instead of JSON.
+ *
+ * Hedera: the buyer transfers USDC with the 32-byte attribution memo from the challenge and
+ * retries with `Authorization: Payment <credential>`; mppx-hedera confirms the transfer
+ * against the Mirror Node. Stripe: the credential carries a Shared Payment Token and mppx
+ * confirms a PaymentIntent. Either way the route then returns 200 with `Payment-Receipt`.
  */
 import { Credential } from "mppx";
 import { USDC_DECIMALS, USDC_TOKEN_ID, canSettle, charge, chargeRecipient } from "~~/lib/mppx";
@@ -37,12 +40,23 @@ function markDemoMode(response: Response): Response {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
+/** Method named by the request's payment credential, if it carries a parseable one. */
+function credentialMethod(request: Request): string | null {
+  try {
+    return Credential.fromRequest(request).challenge.method;
+  } catch {
+    return null;
+  }
+}
+
 async function handlePayment(request: Request): Promise<Response> {
   const requestedId = new URL(request.url).searchParams.get("product") ?? "";
   // An unknown id falls back to the first fixture rather than 404-ing, so the endpoint is
   // always inspectable — `/api/pay` on its own returns a valid challenge.
   const product = findProduct(requestedId) ?? products[0];
   const demoMode = !canSettle();
+  // Hedera's demo mode must not swallow a card credential when Stripe itself is live.
+  const stripCredential = demoMode && credentialMethod(request) !== "stripe";
 
   let result;
   try {
@@ -53,7 +67,7 @@ async function handlePayment(request: Request): Promise<Response> {
       recipient: chargeRecipient(),
       description: `MPP Checkout — ${product.name}`,
       meta: { product: product.id, amountUsd: product.priceUsd },
-    })(demoMode ? withoutCredential(request) : request);
+    })(stripCredential ? withoutCredential(request) : request);
   } catch (error) {
     // Settlement verification can fail for reasons outside the protocol (Mirror Node
     // unreachable, token not associated). Report it as JSON rather than an HTML 500 page.

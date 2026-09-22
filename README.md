@@ -51,7 +51,7 @@ Copy `packages/nextjs/.env.example` to `packages/nextjs/.env` and fill in only t
 
 Wallet connection additionally uses `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID` ([Reown / WalletConnect Cloud](https://cloud.reown.com)).
 
-Payment logic itself lands in a later increment — this one is the storefront shell.
+`/api/pay` answers with one 402 that carries a `hedera` challenge and, once Stripe is configured, a `stripe` challenge alongside it. Browsers requesting it get a Stripe card form; agents get the challenge JSON.
 
 ## Scripts
 
@@ -65,8 +65,8 @@ Payment logic itself lands in a later increment — this one is the storefront s
 
 ## Project layout
 
-- **packages/nextjs/app** — App Router routes: `/`, `/checkout`, `/receipt/[id]`
-- **packages/nextjs/lib** — `demo.ts` (per-rail credential detection), `products.ts` (fixture catalogue)
+- **packages/nextjs/app** — App Router routes: `/`, `/checkout`, `/receipt/[id]`; API routes `/api/pay` (MPP challenge), `/api/pay/token` (Stripe SPT minting), `/api/testnet/fund` (testnet-only buyer faucet)
+- **packages/nextjs/lib** — `demo.ts` (per-rail credential detection), `products.ts` (fixture catalogue), `mppx.ts` (MPP server), `hederaOperator.ts` (operator client and network switch)
 - **packages/nextjs/components** — storefront components plus the Scaffold-HBAR wallet and theme stack
 - **packages/nextjs/public/products** — local SVG placeholders; nothing is fetched remotely
 

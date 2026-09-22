@@ -37,6 +37,16 @@ These read server-only variables, so call them from server components or route h
 | `/` | Store — fixture product grid, each item linking to checkout |
 | `/checkout` | Card, Hedera and x402 payment options; each disabled in demo mode |
 | `/receipt/[id]` | Receipt view; an unknown id renders a demo receipt, not a 404 |
+| `/api/pay` | One MPP 402 advertising `hedera` and, when `hasStripe()`, `stripe`; HTML card form for browsers |
+| `/api/pay/token` | Mints a Stripe Shared Payment Token for the card form; 503 in demo mode |
+| `/api/testnet/fund` | Test-buyer USDC faucet; 403 unless the resolved network is testnet |
+
+## Production switches — do not weaken
+
+- `HEDERA_NETWORK` (`testnet` default, or `mainnet`) is read only through `resolvedNetwork()` in `lib/hederaOperator.ts`. `lib/mppx.ts` derives USDC id, Mirror Node and chain id from it.
+- `/api/testnet/fund` checks `resolvedNetwork() === "testnet"` itself, before anything else. Keep that check in the handler.
+- `lib/mppx.ts` throws at module load when the insecure default `MPP_SECRET_KEY` would be used on mainnet or with a live Stripe key.
+- Import Stripe's method from `mppx/stripe/server/spt` and `Mppx` from `mppx/server/core`. The plain `mppx/server` and `mppx/stripe/server` entry points pull in Tempo, which fails to load against the pinned viem.
 
 ## Layout
 
@@ -48,6 +58,8 @@ packages/nextjs/
   components/             ProductCard, PaymentOption, Header, Footer, …
   lib/
     demo.ts               Per-integration credential detection
+    mppx.ts               MPP server: Hedera + Stripe charge methods, one challenge
+    hederaOperator.ts     Operator client + resolvedNetwork() switch
     products.ts           Fixture catalogue (Product[])
   hooks/
     useHederaSigner.ts    Wallet + Hedera account identity
