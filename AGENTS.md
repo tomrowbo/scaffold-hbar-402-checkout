@@ -113,3 +113,125 @@ import { useTargetNetwork } from "~~/hooks/scaffold-hbar";
 | `CONSTANT_CASE` | constants |
 
 Prefer `type` over `interface`. Comments only when they add non-obvious context.
+
+## Paying this endpoint as an agent
+
+This is what MPP is for: a program with a key, no browser, no human. The flow is three HTTP
+steps — request, settle, retry — and the whole thing fits in a file.
+
+### The protocol, in full
+
+1. `GET /api/pay?product=<id>` with `Accept: application/json` → `402` and a
+   `WWW-Authenticate` header carrying one `Payment` challenge per rail
+   (`method="hedera"` and `method="stripe"`).
+2. Pick the `hedera` challenge. Its base64url `request` decodes to
+   `{ amount, currency, methodDetails: { chainId }, recipient }` — `amount` in USDC base
+   units, `currency` the HTS token id (`0.0.5449` on testnet).
+3. Build a `TransferTransaction` moving `amount` of `currency` from the agent to `recipient`,
+   with the transaction memo set to `Attribution.encode({ challengeId, serverId })`. That
+   32-byte memo is what binds the on-chain transfer to this specific challenge; `serverId`
+   **must** be the challenge's `realm`, or the server's verification rejects it.
+4. Submit it, take the transaction id, and wrap it in a credential.
+5. Retry the same URL with `Authorization: Payment <credential>`. The server re-reads the
+   transfer from the Mirror Node, then answers `200` with a `Payment-Receipt` header.
+
+### Runnable
+
+Run it from `packages/nextjs` (that is where `mppx` and `mppx-hedera` resolve from) against
+a dev server started with `HEDERA_OPERATOR_ID` / `HEDERA_OPERATOR_KEY` set. The agent account
+needs HBAR for fees and USDC (`0.0.5449`) to spend, and must be a different account from the
+merchant's `HEDERA_RECIPIENT_ID`.
+
+```js
+// pay-agent.mjs — node pay-agent.mjs <agent-account-id> <agent-ecdsa-key> [product-id]
+import { AccountId, Client, PrivateKey, TokenId, TransferTransaction } from "@hiero-ledger/sdk";
+import { Challenge, Credential } from "mppx";
+import { Attribution } from "mppx-hedera";
+
+const [accountId, privateKey, product = "hashgraph-mug"] = process.argv.slice(2);
+const endpoint = `http://localhost:3000/api/pay?product=${product}`;
+
+// 1. Ask for the resource and get challenged.
+const challenged = await fetch(endpoint, { headers: { Accept: "application/json" } });
+if (challenged.status !== 402) throw new Error(`expected 402, got ${challenged.status}`);
+
+// 2. One header, several offers. Take the Hedera one.
+const offers = Challenge.fromResponseList(challenged);
+console.log("offers:", offers.map(o => o.method)); //=> [ 'hedera', 'stripe' ]
+const challenge = offers.find(o => o.method === "hedera");
+const { amount, currency, recipient } = challenge.request;
+
+// 3. The memo binds this transfer to this challenge. serverId must equal the realm.
+const memo = Attribution.encode({ challengeId: challenge.id, serverId: challenge.realm });
+
+// 4. Sign, submit, keep the transaction id (push mode — the agent pays its own fees).
+const key = PrivateKey.fromStringECDSA(privateKey.replace(/^0x/, ""));
+const client = Client.forTestnet().setOperator(AccountId.fromString(accountId), key);
+const token = TokenId.fromString(currency);
+const submitted = await new TransferTransaction()
+  .addTokenTransfer(token, AccountId.fromString(accountId), -Number(amount))
+  .addTokenTransfer(token, AccountId.fromString(recipient), Number(amount))
+  .setTransactionMemo(memo)
+  .freezeWith(client)
+  .execute(client);
+const { status } = await submitted.getReceipt(client);
+if (status.toString() !== "SUCCESS") throw new Error(`transfer failed: ${status}`);
+const transactionId = submitted.transactionId.toString();
+client.close();
+
+// 5. Retry with the credential. `credentialHeader` is "Authorization" for this challenge.
+const credential = Credential.from({
+  challenge,
+  payload: { type: "hash", transactionId },
+  source: `did:pkh:hedera:testnet:${accountId}`,
+});
+const paid = await fetch(endpoint, {
+  headers: {
+    Accept: "application/json",
+    [Challenge.credentialHeader(challenge)]: Credential.serialize(credential),
+  },
+});
+
+console.log(paid.status, await paid.json());
+console.log("receipt:", paid.headers.get("payment-receipt"));
+console.log(`https://hashscan.io/testnet/transaction/${transactionId}`);
+```
+
+`packages/nextjs/.e2e-charge.mjs` is the same flow in *pull* mode — the agent signs the
+transfer and the **server** submits it through the operator account. Use pull mode when the
+payer cannot reach the Hedera gRPC endpoints (a browser, a locked-down sandbox); the
+transaction id still names the payer's account, so they still pay the fee.
+
+### Shorter, with the packaged client method
+
+`mppx-hedera/client` packages steps 3–4:
+
+```js
+import { Challenge } from "mppx";
+import { charge } from "mppx-hedera/client";
+
+const method = charge({ operatorId, operatorKey, network: "testnet" }); // mode: "push" | "pull"
+const challenge = Challenge.fromResponseList(challenged).find(o => o.method === "hedera");
+const credential = await method.createCredential({ challenge }); // already serialized
+```
+
+Two caveats, both from reading the package: it resolves the token from
+`methodDetails.chainId` rather than from the challenge's `currency` field (they agree here —
+296 → `0.0.5449`), and it parses the key with `PrivateKey.fromStringECDSA` only, so an
+ED25519 operator key throws. The longhand above has neither constraint.
+
+### Do not import `mppx/client` in this repo
+
+`mppx/client` re-exports the Tempo method, which imports `viem/tempo/chains`. That subpath
+does not exist in the viem version wagmi pins here, so the import fails outright:
+
+```
+Error: Package subpath './tempo/chains' is not defined by "exports" in
+  node_modules/viem/package.json imported from node_modules/mppx/dist/tempo/client/Subscription.js
+```
+
+This is the client-side twin of the `mppx/server` → `mppx/server/core` problem above. There
+is no `mppx/client/core`, so an agent in this workspace composes the flow from the root
+`mppx` exports (`Challenge`, `Credential`) plus `mppx-hedera`, exactly as the scripts above
+do. Outside this repo, on a viem new enough to ship `viem/tempo`, `Mppx.create` from
+`mppx/client` works normally.
