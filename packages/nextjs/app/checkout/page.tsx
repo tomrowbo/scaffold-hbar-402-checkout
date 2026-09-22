@@ -1,7 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
+import { HederaPayButton } from "~~/components/HederaPayButton";
 import { PaymentOption } from "~~/components/PaymentOption";
-import { hasHedera, hasStripe, hasX402 } from "~~/lib/demo";
+import { hasStripe, hasX402 } from "~~/lib/demo";
+import { USDC_TOKEN_ID, canSettle } from "~~/lib/mppx";
 import { findProduct, products } from "~~/lib/products";
 
 type CheckoutPageProps = {
@@ -13,6 +15,8 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
   const requestedId = Array.isArray(productParam) ? productParam[0] : productParam;
   const product = (requestedId ? findProduct(requestedId) : undefined) ?? products[0];
 
+  const hederaEnabled = canSettle();
+
   const paymentOptions = [
     {
       label: "Card",
@@ -22,9 +26,10 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
     },
     {
       label: "Hedera",
-      description: "Native USDC transfer on Hedera, signed by the operator account and confirmed on Mirror Node.",
+      description: `Native USDC (${USDC_TOKEN_ID}) transfer on Hedera, bound to the challenge by a 32-byte attribution memo and confirmed on the Mirror Node.`,
       envVars: ["HEDERA_OPERATOR_ID", "HEDERA_OPERATOR_KEY"],
-      enabled: hasHedera(),
+      enabled: hederaEnabled,
+      action: <HederaPayButton productId={product.id} priceUsd={product.priceUsd} enabled={hederaEnabled} />,
     },
     {
       label: "x402",
@@ -76,7 +81,13 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
 
         <div className="alert mt-8 border border-base-300 bg-base-100 shadow-sm">
           <span className="text-sm">
-            No payment logic runs yet. Follow a completed order to a{" "}
+            Every rail settles through one endpoint. Inspect the raw protocol at{" "}
+            <Link href={`/api/pay?product=${product.id}`} className="link link-primary font-mono text-xs">
+              /api/pay?product={product.id}
+            </Link>{" "}
+            — it answers <code className="bg-base-300/40 px-1 py-0.5 rounded text-xs">402</code> with a{" "}
+            <code className="bg-base-300/40 px-1 py-0.5 rounded text-xs">WWW-Authenticate: Payment</code> challenge, or
+            see a{" "}
             <Link href={`/receipt/${product.id}`} className="link link-primary font-medium">
               sample receipt
             </Link>

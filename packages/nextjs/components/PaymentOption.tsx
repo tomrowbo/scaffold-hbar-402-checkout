@@ -9,9 +9,11 @@ export type PaymentOptionProps = {
   /** Result of the rail's predicate in `~~/lib/demo`. */
   enabled: boolean;
   icon?: React.ReactNode;
+  /** Replaces the inert placeholder button for rails that can actually take a payment. */
+  action?: React.ReactNode;
 };
 
-export const PaymentOption = ({ label, description, envVars, enabled, icon }: PaymentOptionProps) => {
+export const PaymentOption = ({ label, description, envVars, enabled, icon, action }: PaymentOptionProps) => {
   return (
     <div className={`card border bg-base-100 ${enabled ? "border-primary/40 shadow-sm" : "border-base-300"}`}>
       <div className="card-body gap-3 py-5">
@@ -29,9 +31,11 @@ export const PaymentOption = ({ label, description, envVars, enabled, icon }: Pa
 
         <p className="text-sm text-base-content/70 m-0">{description}</p>
 
-        <button type="button" className="btn btn-primary btn-sm w-full" disabled={!enabled}>
-          Pay with {label}
-        </button>
+        {action ?? (
+          <button type="button" className="btn btn-primary btn-sm w-full" disabled={!enabled}>
+            Pay with {label}
+          </button>
+        )}
 
         {!enabled && (
           <p className="text-xs text-base-content/60 m-0">

@@ -21,6 +21,10 @@ const nextConfig: NextConfig = {
       ...(config.resolve.alias ?? {}),
       porto: false,
       "porto/internal": false,
+      // mppx dynamically imports the MCP SDK from its compose() path to raise MCP-shaped
+      // payment errors. This storefront only uses the HTTP transport, and the SDK is an
+      // optional peer, so stub it out rather than pulling it into the bundle.
+      "@modelcontextprotocol/sdk/types.js": false,
     };
 
     config.resolve.fallback = {

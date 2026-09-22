@@ -1,30 +1,46 @@
 import Image from "next/image";
 import Link from "next/link";
+import { findOrder } from "~~/lib/orders";
 import { findProduct, products } from "~~/lib/products";
 
 type ReceiptPageProps = {
   params: Promise<{ id: string }>;
 };
 
-/** Fixed so the receipt renders identically on every machine and every run. */
+/** Fixed so the demo receipt renders identically on every machine and every run. */
 const DEMO_SETTLED_AT = "2026-01-14 10:32 UTC";
+
+export const dynamic = "force-dynamic";
 
 export default async function ReceiptPage({ params }: ReceiptPageProps) {
   const { id } = await params;
 
+  // A settled order is keyed by the MPP challenge id that paid for it.
+  const order = findOrder(id);
   // An unrecognised reference renders a demo receipt rather than a 404, so a judge
   // can open /receipt/anything and still see the finished flow.
-  const matched = findProduct(id);
+  const matched = findProduct(order?.productId ?? id);
   const product = matched ?? products[0];
-  const isDemo = !matched;
+  const isDemo = !order && !matched;
 
-  const rows = [
-    { label: "Order reference", value: id },
-    { label: "Item", value: product.name },
-    { label: "Amount", value: `$${product.priceUsd} USD` },
-    { label: "Payment rail", value: "Demo — no rail configured" },
-    { label: "Settled", value: DEMO_SETTLED_AT },
-  ];
+  const rows = order
+    ? [
+        { label: "Order reference", value: order.id },
+        { label: "Item", value: product.name },
+        { label: "Amount", value: `${order.amountUsd || product.priceUsd} USDC (${order.tokenId})` },
+        { label: "Payment rail", value: "Hedera — native USDC charge (MPP)" },
+        { label: "Paid by", value: order.payer?.split(":").pop() ?? "unknown" },
+        { label: "Paid to", value: order.recipient },
+        { label: "Transaction", value: order.transactionId },
+        { label: "Settled", value: order.settledAt },
+      ]
+    : [
+        { label: "Order reference", value: id },
+        { label: "Item", value: product.name },
+        { label: "Amount", value: `$${product.priceUsd} USD` },
+        { label: "Payment rail", value: "Demo — no rail configured" },
+        { label: "Settled", value: DEMO_SETTLED_AT },
+      ];
 
   return (
     <div className="flex flex-col grow">
@@ -64,7 +80,9 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
               </div>
               <div className="grow">
                 <h2 className="card-title text-base m-0">{product.name}</h2>
-                <p className="text-sm text-base-content/60 m-0">Paid in full</p>
+                <p className="text-sm text-base-content/60 m-0">
+                  {order ? "Settled on Hedera testnet" : "Paid in full"}
+                </p>
               </div>
               <p className="text-2xl font-bold m-0 tabular-nums">${product.priceUsd}</p>
             </div>
@@ -79,6 +97,18 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
                 </div>
               ))}
             </dl>
+
+            {order && (
+              <a
+                href={order.hashscanUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-outline btn-sm w-full sm:w-auto self-start"
+                data-testid="hashscan-link"
+              >
+                View on Hashscan ↗
+              </a>
+            )}
           </div>
         </div>
 
