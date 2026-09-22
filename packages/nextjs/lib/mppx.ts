@@ -134,10 +134,18 @@ const methods: Method.AnyServer[] = [
 
 /**
  * The card offer is always advertised so one 402 names both rails. In demo mode it carries a
- * placeholder network and no Stripe client: the route never lets a card credential reach
- * `verify` (see `stripeDemoMode()`), and browsers get a disabled demo card form instead.
+ * placeholder network and secret key: the route never lets a card credential reach `verify`
+ * (see `stripeDemoMode()`) and `/api/pay/token` 503s before it would ever use that key.
+ *
+ * `html` is still configured in demo mode, with a syntactically valid but unregistered
+ * publishable key. mppx's Stripe Elements template mounts the card `iframe` entirely
+ * client-side (Stripe.js only calls out to `api.stripe.com` on submit, not on mount), so the
+ * browser gets a real Stripe Elements form with no Stripe account required — submitting it
+ * fails, same as the rest of the rail in demo mode, but the form itself is not a fake.
  */
 const STRIPE_DEMO_NETWORK_ID = "demo";
+const STRIPE_DEMO_SECRET_KEY = "sk_test_demo00000000000000000000000000000000000000000000";
+const STRIPE_DEMO_PUBLISHABLE_KEY = "pk_test_demo00000000000000000000000000000000000000000000";
 
 methods.push(
   stripeClient
@@ -153,9 +161,13 @@ methods.push(
         },
       })
     : stripe.charge({
-        secretKey: "",
+        secretKey: STRIPE_DEMO_SECRET_KEY,
         networkId: STRIPE_DEMO_NETWORK_ID,
         paymentMethodTypes: ["card"],
+        html: {
+          publishableKey: STRIPE_DEMO_PUBLISHABLE_KEY,
+          createTokenUrl: "/api/pay/token",
+        },
       }),
 );
 

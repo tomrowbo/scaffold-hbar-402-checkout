@@ -117,3 +117,52 @@ Fixed **C5** and **C6** (contract: C5 must be verifiable without credentials).
 - Verified with an empty env on the dev server: JSON 402 has both methods, the HTML 402
   renders `#card-number`, `/`, `/checkout` and `/receipt/demo-1` return 200, and
   `/api/pay/token` returns 503. `yarn next:check-types` and `yarn lint` pass.
+
+## Repair attempt 3: C3, C4, C6
+
+Fixed **C3**, **C4**, and **C6**.
+
+**C3/C4 root cause.** `app/api/pay/route.ts` set `X-MPP-Demo-Mode` whenever `demoMode ||
+cardDemoMode` — i.e. Stripe being unconfigured alone marked the *whole* challenge, including
+the Hedera offer, as demo. `lib/hederaCheckout.ts` then refused to settle as soon as that
+header was present at all. With a real Hedera operator/recipient configured but no Stripe
+keys — exactly the "funded test signer, no Stripe" scenario C3 is graded under — the burner
+key never got to sign anything, even though Hedera itself was fully able to settle. This
+directly violated AGENTS.md's per-integration rule (Stripe absence must not disable Hedera).
+
+- `markDemoMode` now takes the list of stubbed rails and writes it as a comma-separated
+  value (`hedera`, `stripe`, or `hedera,stripe`) instead of a fixed `"settlement-stubbed"`
+  string.
+- `hederaCheckout.ts` only throws its demo-mode error when `hedera` is in that list, so a
+  configured Hedera rail settles regardless of Stripe's state.
+- Verified end-to-end against the running dev server (this session's shell had
+  `HEDERA_OPERATOR_ID`/`HEDERA_OPERATOR_KEY` set, no Stripe vars): funded a fresh testnet
+  keypair from the operator, ran `.e2e-charge.mjs <key> hbar-tee` (mirrors
+  `hederaCheckout.ts`'s pull path) — 402 carried `x-mpp-demo-mode: stripe` only, and the
+  retried request returned 200 with a `Payment-Receipt` header and a `hashscanUrl`. Then
+  `curl`'d `/receipt/<orderId>` and confirmed the `hashscan.io/testnet` link matches the
+  settling transaction id (C4).
+
+**C6 root cause.** Repair attempt 2 (see above) always advertised a `stripe` offer so one
+402 names both rails, but in demo mode it built the offer with no `html` config, so
+`app/api/pay/route.ts` served a hand-written `demoCardPage` — disabled plain `<input>`s, no
+Stripe.js, no iframe. The validator correctly called this out as not a Stripe Elements form.
+
+- `lib/mppx.ts`: the demo-mode `stripe.charge()` now also gets an `html` config
+  (`publishableKey`/`createTokenUrl`), same shape as the live branch, just with a
+  syntactically-valid but unregistered `pk_test_…`/`sk_test_…` placeholder pair instead of
+  real keys. mppx's own Stripe Elements template (`html.gen.js`) then renders for any
+  composed method carrying `html`, for *any* `Accept: text/html` request — this is the same
+  mechanism that already served the live Elements page when Stripe was configured, so no
+  custom HTML was needed. The card `iframe` mounts entirely client-side (Stripe.js only
+  calls `api.stripe.com` on submit, not on mount), so this needs no real Stripe account.
+  The placeholder `secretKey` is never used: `verify()` is unreachable in demo mode because
+  the route strips the credential first, and `/api/pay/token` 503s on `hasStripe()` before
+  ever touching `stripeClient`.
+- `app/api/pay/route.ts`: deleted `demoCardPage`, `wantsHtml`, and `escapeHtml` — mppx's
+  built-in `Accept: text/html` handling now covers both the live and demo Stripe cases.
+- Verified with an empty env on the dev server: `curl -H "Accept: text/html"
+  /api/pay?product=tee` now returns the mppx-generated page containing the real
+  `js.stripe.com` loader script and the demo `pk_test_…` key, not the old static form.
+
+`yarn next:check-types`, `yarn lint`, and `yarn next:build` all pass after these changes.

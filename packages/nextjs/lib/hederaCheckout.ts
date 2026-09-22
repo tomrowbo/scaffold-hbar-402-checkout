@@ -177,7 +177,11 @@ export async function payWithHedera({ productId, wallet, onProgress }: PayWithHe
   if (challengeResponse.status !== 402) {
     throw new HederaChargeError(`Expected a 402 challenge, got HTTP ${challengeResponse.status}.`);
   }
-  if (challengeResponse.headers.get("X-MPP-Demo-Mode")) {
+  // `X-MPP-Demo-Mode` names which rail(s) are stubbed, comma-separated (e.g. `stripe`,
+  // `hedera`, or `hedera,stripe`). Only bail here when Hedera itself is the stubbed rail —
+  // Stripe being unconfigured must not disable a fully configured Hedera settlement path.
+  const demoRails = challengeResponse.headers.get("X-MPP-Demo-Mode")?.split(",") ?? [];
+  if (demoRails.includes("hedera")) {
     throw new HederaChargeError(
       "This challenge was issued in demo mode, so there is no merchant account to settle against.",
       "Set HEDERA_OPERATOR_ID and HEDERA_OPERATOR_KEY (or HEDERA_RECIPIENT_ID) to enable settlement.",
