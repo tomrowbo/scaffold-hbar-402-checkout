@@ -217,6 +217,7 @@ transfer, retry with the credential, read the receipt.
 | `yarn next:check-types` | TypeScript check |
 | `yarn lint` | ESLint |
 | `yarn format` | Prettier |
+| `node scripts/e2e-charge.mjs <burner-key> [product]` | End-to-end charge against a running dev server: 402 → sign → retry → receipt. Needs `HEDERA_OPERATOR_*` set and `yarn next:dev` running |
 
 ## Project layout
 
@@ -238,6 +239,8 @@ packages/nextjs/
     products.ts           Fixture catalogue (prices are decimal strings, never floats)
   components/             Storefront components + the Scaffold-HBAR wallet/theme stack
   public/products/        Local SVG placeholders — nothing is fetched remotely
+scripts/
+  e2e-charge.mjs          Exercises the pull-mode Hedera payment path end to end
 ```
 
 Prerequisites: Node.js ≥ 20.18.3, Git, Yarn. Wallet connection additionally uses
