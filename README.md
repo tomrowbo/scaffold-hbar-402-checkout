@@ -184,9 +184,32 @@ The Hedera network identifier is **`hedera:testnet`**, not `eip155:296`. Passing
 form silently matches nothing in `kinds` and gets debugged as a payment bug rather than a
 wrong constant.
 
-With `AX402_FACILITATOR_URL` set, `hasX402()` is true and the x402 option on `/checkout`
-leaves demo mode. [`docs/mpp-vs-x402.md`](docs/mpp-vs-x402.md) compares the two challenge
-formats line by line.
+`/api/x402` serves the same purchase as an x402 v2 challenge: same product, same USDC base
+units, same `payTo` and `asset` as the Hedera offer on `/api/pay`. It follows the same
+product-fallback rule and the same `X-MPP-Demo-Mode` convention:
+
+```console
+$ curl -si -H 'Accept: application/json' 'http://localhost:3000/api/x402?product=hbar-tee'
+HTTP/1.1 402 Payment Required
+x-mpp-demo-mode: x402
+
+{"x402Version":2,"error":"X-PAYMENT header is required","accepts":[{"scheme":"exact",
+ "network":"hedera:testnet","maxAmountRequired":"24000000","resource":"http://localhost:3000/api/x402?product=hbar-tee",
+ "description":"MPP Checkout — HBAR Logo Tee","mimeType":"application/json","payTo":"0.0.0",
+ "maxTimeoutSeconds":60,"asset":"0.0.5449"}],"demo":true}
+```
+
+With `AX402_FACILITATOR_URL` set, the server asks the facilitator's `/supported` once, on the
+first request (3s timeout), and caches the answer for the life of the process. If
+`exact` on `hedera:testnet` is listed, `demo` and the header go away. If the facilitator
+is unreachable or doesn't list Hedera, the route stays in demo mode instead of failing, and
+the other rails are unaffected. The x402 option on `/checkout` leaves demo mode whenever
+the variable is set.
+
+**Scope:** only the challenge side is implemented. Settlement (`/verify` and `/settle`
+against the facilitator, plus a buyer-side signing flow) is not wired, so a retried
+`X-PAYMENT` against a live facilitator gets `501 Not Implemented`, never a fake receipt.
+[`docs/mpp-vs-x402.md`](docs/mpp-vs-x402.md) compares the two challenge formats line by line.
 
 ## Going to production
 
@@ -230,12 +253,14 @@ packages/nextjs/
     api/pay/              One MPP 402 advertising both hedera and stripe
     api/pay/token/        Mints a Stripe Shared Payment Token; 503 in demo mode
     api/testnet/fund/     Test-buyer USDC faucet; 403 unless the network is testnet
+    api/x402/             The same offer as an x402 v2 challenge (challenge side only)
   lib/
     demo.ts               hasHedera() / hasStripe() / hasX402() — per-rail detection
     mppx.ts               MPP server: both charge methods, one challenge
     hederaCheckout.ts     Browser half of the Hedera rail (402 → sign → retry)
     hederaOperator.ts     Operator client and resolvedNetwork()
     orders.ts             Settled-order store, keyed by challenge id
+    x402.ts               Facilitator capability probe and canSettleX402()
     products.ts           Fixture catalogue (prices are decimal strings, never floats)
   components/             Storefront components + the Scaffold-HBAR wallet/theme stack
   public/products/        Local SVG placeholders — nothing is fetched remotely

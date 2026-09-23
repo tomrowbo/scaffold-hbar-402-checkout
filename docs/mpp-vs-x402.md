@@ -44,8 +44,10 @@ offer lives. The offer is in the header.
 
 ### x402
 
-The same purchase expressed as an x402 v2 payment-required body, for the `exact` scheme on
-`hedera:testnet`:
+The same purchase as an x402 v2 payment-required body, for the `exact` scheme on
+`hedera:testnet`, captured from `/api/x402?product=hbar-tee` on the same store (with no
+facilitator configured the body also carries `"demo": true`, and the response carries
+`X-MPP-Demo-Mode: x402`):
 
 ```json
 {
@@ -237,12 +239,15 @@ Precision here, because a comparison that overstates its own implementation is w
   three `STRIPE_*` variables are set.
 - **x402 is the comparison rail.** It is gated on `AX402_FACILITATOR_URL` through `hasX402()`
   in `lib/demo.ts` and shown as a third option on `/checkout`, disabled with a demo-mode note
-  until that variable is set. The x402 challenge body in §1 is the shape this store serves
-  for the same product; the facilitator `/supported` output in §4 is captured live. x402
-  settlement is not wired end to end in this template — it would mean `POST /verify` and
-  `POST /settle` against the facilitator plus a buyer-side signing flow for the `exact`
-  scheme on `hedera:testnet`, which is a second payment integration, not a corner of this
-  one.
+  until that variable is set. `/api/x402` serves the challenge body in §1, built from the
+  same `chargeRecipient()`, `USDC_TOKEN_ID` and `USDC_DECIMALS` as the Hedera offer on
+  `/api/pay`. `lib/x402.ts` asks the facilitator's `/supported` once per process whether it
+  lists `exact` on `hedera:testnet`. If it doesn't, or it can't be reached, the route stays in
+  demo mode rather than failing. x402 settlement is not wired end to end in this template. It
+  would need `POST /verify` and `POST /settle` against the facilitator plus a buyer-side
+  signing flow for the `exact` scheme on `hedera:testnet`, which is a second payment
+  integration rather than a corner of this one. A retried `X-PAYMENT` against a live
+  facilitator gets `501 Not Implemented`, not a receipt.
 
 A related data point, from reading the `mppx` package itself: its own x402 adapter
 (`mppx/x402`) is EVM-only — `evmNetworkPrefix` is `'eip155:'` and its network type is
