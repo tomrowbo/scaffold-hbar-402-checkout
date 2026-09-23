@@ -16,6 +16,16 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: process.env.NEXT_PUBLIC_IGNORE_BUILD_ERROR === "true",
   },
+  // `/openapi.json` and `/llms.txt` are the conventional, dot-bearing paths MPP discovery and
+  // agent tooling expect. Next.js's app-paths manifest silently drops route segments named
+  // like a metadata-file convention (`name.ext`), so the handlers live at extension-free
+  // paths (`/api/openapi`, `/api/llms`) and are rewritten to their conventional URLs here.
+  async rewrites() {
+    return [
+      { source: "/openapi.json", destination: "/api/openapi" },
+      { source: "/llms.txt", destination: "/api/llms" },
+    ];
+  },
   webpack: (config, { dev, isServer }) => {
     config.resolve.alias = {
       ...(config.resolve.alias ?? {}),
