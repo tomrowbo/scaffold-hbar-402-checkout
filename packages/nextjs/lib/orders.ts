@@ -13,6 +13,8 @@ import { Challenge } from "mppx";
 export type SettledOrder = {
   /** MPP challenge id — also the public order reference in `/receipt/[id]`. */
   id: string;
+  /** MPP method that settled the order: `"hedera"` or `"stripe"`. */
+  method: string;
   productId: string;
   /** Human-readable price as shown in the catalogue, e.g. `"24.00"`. */
   amountUsd: string;
@@ -20,9 +22,10 @@ export type SettledOrder = {
   amountBaseUnits: string;
   tokenId: string;
   recipient: string;
-  /** Hedera transaction id, e.g. `0.0.1234@1758556800.123456789`. */
+  /** Hedera transaction id (`0.0.1234@1758556800.123456789`) or Stripe PaymentIntent id. */
   transactionId: string;
-  hashscanUrl: string;
+  /** Null for card payments — there is no ledger transaction to link to. */
+  hashscanUrl: string | null;
   /** `did:pkh:hedera:testnet:0.0.x` identifier of the payer, when the credential carries one. */
   payer?: string;
   settledAt: string;
@@ -50,8 +53,9 @@ export function findOrder(id: string): SettledOrder | undefined {
 
 /**
  * Records every verified charge. mppx emits `payment.success` only after the Mirror Node
- * confirms the token transfer and the attribution memo binds it to this challenge, so the
- * transaction id here is one the server checked rather than one the client asserted.
+ * confirms the token transfer and the attribution memo binds it to this challenge (or, for
+ * cards, after Stripe confirms the PaymentIntent), so the reference here is one the server
+ * checked rather than one the client asserted.
  */
 export function attachOrderRecorder(): void {
   // The guard lives on the instance, not on a module- or global-scoped flag: a dev reload
@@ -62,6 +66,7 @@ export function attachOrderRecorder(): void {
   instance.__orderRecorderAttached = true;
 
   mppx.onPaymentSuccess(context => {
+    const method = context.challenge.method;
     const meta = Challenge.meta(context.challenge);
     const request = context.challenge.request as {
       amount?: string;
@@ -72,13 +77,14 @@ export function attachOrderRecorder(): void {
 
     recordOrder({
       id: context.challenge.id,
+      method,
       productId: meta?.product ?? "",
       amountUsd: meta?.amountUsd ?? "",
       amountBaseUnits: request.amount ?? "",
-      tokenId: request.currency ?? USDC_TOKEN_ID,
+      tokenId: request.currency ?? (method === "hedera" ? USDC_TOKEN_ID : ""),
       recipient: request.recipient ?? "",
       transactionId,
-      hashscanUrl: hashscanTransactionUrl(transactionId),
+      hashscanUrl: method === "hedera" ? hashscanTransactionUrl(transactionId) : null,
       payer: context.credential?.source,
       settledAt: context.receipt.timestamp,
     });

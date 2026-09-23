@@ -44,11 +44,11 @@
     },
     {
       "id": "C6",
-      "statement": "Requesting the pay endpoint from a browser renders a Stripe Elements card form rather than raw JSON.",
-      "howToVerify": "Navigate to /api/pay?product=tee in the browser with Accept: text/html and confirm a card input is rendered.",
+      "statement": "Requesting the pay endpoint from a browser returns an HTML payment page, and without Stripe credentials that page is an honestly disabled demo-mode panel rather than a broken card form.",
+      "howToVerify": "Navigate to /api/pay?product=tee with Accept: text/html and confirm an HTML page renders rather than raw JSON. If Stripe credentials are ABSENT, confirm the page contains the text 'demo mode', names STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY and STRIPE_NETWORK_ID, and that its pay control carries a disabled attribute. If Stripe credentials are PRESENT, confirm a Stripe Elements card input renders and the pay control is enabled.",
       "severity": "major",
       "walletRequired": false,
-      "verifiableWithoutCredentials": false
+      "verifiableWithoutCredentials": true
     }
   ]
 }

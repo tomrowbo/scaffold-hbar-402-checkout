@@ -31,7 +31,7 @@ console.log("1. challenge status:", res.status);
 console.log("   www-authenticate:", res.headers.get("www-authenticate")?.slice(0, 120), "...");
 if (res.status !== 402) process.exit(1);
 
-const challenge = Challenge.fromResponse(res);
+const challenge = Challenge.fromResponseList(res).find(c => c.method === "hedera");
 const { amount: amtStr, currency: tokenId, recipient } = challenge.request;
 const amount = BigInt(amtStr);
 console.log("2. parsed:", { id: challenge.id, realm: challenge.realm, amount: amtStr, tokenId, recipient });

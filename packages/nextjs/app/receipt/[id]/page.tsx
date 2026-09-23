@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { HEDERA_NETWORK } from "~~/lib/mppx";
 import { findOrder } from "~~/lib/orders";
 import { findProduct, products } from "~~/lib/products";
 
@@ -22,13 +23,19 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
   const matched = findProduct(order?.productId ?? id);
   const product = matched ?? products[0];
   const isDemo = !order && !matched;
+  const isCard = order?.method === "stripe";
 
   const rows = order
     ? [
         { label: "Order reference", value: order.id },
         { label: "Item", value: product.name },
-        { label: "Amount", value: `${order.amountUsd || product.priceUsd} USDC (${order.tokenId})` },
-        { label: "Payment rail", value: "Hedera — native USDC charge (MPP)" },
+        {
+          label: "Amount",
+          value: isCard
+            ? `$${order.amountUsd || product.priceUsd} USD`
+            : `${order.amountUsd || product.priceUsd} USDC (${order.tokenId})`,
+        },
+        { label: "Payment rail", value: isCard ? "Card — Stripe charge (MPP)" : "Hedera — native USDC charge (MPP)" },
         { label: "Paid by", value: order.payer?.split(":").pop() ?? "unknown" },
         { label: "Paid to", value: order.recipient },
         { label: "Transaction", value: order.transactionId },
@@ -81,7 +88,11 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
               <div className="grow">
                 <h2 className="card-title text-base m-0">{product.name}</h2>
                 <p className="text-sm text-base-content/60 m-0">
-                  {order ? "Settled on Hedera testnet" : "Paid in full"}
+                  {order
+                    ? isCard
+                      ? "Paid by card via Stripe"
+                      : `Settled on Hedera ${HEDERA_NETWORK}`
+                    : "Paid in full"}
                 </p>
               </div>
               <p className="text-2xl font-bold m-0 tabular-nums">${product.priceUsd}</p>
@@ -98,7 +109,7 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
               ))}
             </dl>
 
-            {order && (
+            {order?.hashscanUrl && (
               <a
                 href={order.hashscanUrl}
                 target="_blank"
