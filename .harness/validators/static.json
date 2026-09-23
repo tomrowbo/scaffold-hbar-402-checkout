@@ -2,8 +2,16 @@
   "name": "mpp-checkout-static",
   "description": "Static invariants for the MPP checkout template.",
   "jsonAssertions": [
-    { "file": "package.json", "path": "packageManager", "equals": "yarn@3.2.3" },
-    { "file": "template.json", "path": "create-scaffold-hbar.defaults.solidityFramework", "equals": "none" }
+    {
+      "file": "package.json",
+      "path": "packageManager",
+      "equals": "yarn@3.2.3"
+    },
+    {
+      "file": "template.json",
+      "path": "create-scaffold-hbar.defaults.solidityFramework",
+      "equals": "none"
+    }
   ],
   "fileAssertions": {
     "required": [
@@ -47,11 +55,18 @@
       "packages/nextjs/components/ProofCard.tsx",
       "packages/nextjs/components/ProofWall.tsx",
       "packages/nextjs/components/SubmitProofForm.tsx",
-      "packages/nextjs/components/TopicSelector.tsx"
+      "packages/nextjs/components/TopicSelector.tsx",
+      "GENERATION_NOTES.md"
     ]
   },
   "textAssertions": [
-    { "file": "README.md", "contains": ["yarn install", "yarn next:dev"] },
+    {
+      "file": "README.md",
+      "contains": [
+        "yarn install",
+        "yarn next:dev"
+      ]
+    },
     {
       "file": "packages/nextjs/lib/demo.ts",
       "contains": [
@@ -66,7 +81,10 @@
     },
     {
       "file": "packages/nextjs/lib/products.ts",
-      "contains": ["export const products", "priceUsd"]
+      "contains": [
+        "export const products",
+        "priceUsd"
+      ]
     }
   ]
 }

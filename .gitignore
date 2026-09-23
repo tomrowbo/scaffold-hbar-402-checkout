@@ -32,3 +32,6 @@ dist
 .skill-cache/
 .harness-skills/
 .harness-context/
+
+# Generator working notes — build process, not product
+GENERATION_NOTES.md
