@@ -44,7 +44,7 @@ offer lives. The offer is in the header.
 
 ### x402
 
-The same purchase as an x402 v2 payment-required body, for the `exact` scheme on
+The same purchase as an x402 v2 payment-required declaration, for the `exact` scheme on
 `hedera:testnet`, captured from `/api/x402?product=hbar-tee` on the same store (with no
 facilitator configured the body also carries `"demo": true`, and the response carries
 `X-MPP-Demo-Mode: x402`):
@@ -52,24 +52,46 @@ facilitator configured the body also carries `"demo": true`, and the response ca
 ```json
 {
   "x402Version": 2,
-  "error": "X-PAYMENT header is required",
+  "error": "payment is required",
+  "resource": {
+    "url": "http://localhost:3000/api/x402?product=hbar-tee",
+    "description": "MPP Checkout - HBAR Logo Tee",
+    "mimeType": "application/json",
+    "serviceName": "MPP Checkout"
+  },
   "accepts": [
     {
       "scheme": "exact",
       "network": "hedera:testnet",
-      "maxAmountRequired": "24000000",
-      "resource": "http://localhost:3000/api/x402?product=hbar-tee",
-      "description": "MPP Checkout — HBAR Logo Tee",
-      "mimeType": "application/json",
+      "amount": "24000000",
+      "asset": "0.0.5449",
       "payTo": "0.0.0",
-      "maxTimeoutSeconds": 60,
-      "asset": "0.0.5449"
+      "maxTimeoutSeconds": 30,
+      "extra": {}
     }
   ]
 }
 ```
 
-Same token, same base units, same recipient. The offer is in the body.
+Same token, same base units, same recipient.
+
+Two things about that shape are worth pinning down, because both are v1 habits that a v2
+client rejects outright. The amount field is `amount`; v1 called it `maxAmountRequired`. And
+`resource` is an object at the top level — in v1 it was a URL string inside each `accepts[]`
+entry, carrying `description` and `mimeType` with it.
+
+The third is subtler: **v2 does not put the offer in the body at all.** The declaration above
+also travels base64-encoded in a `PAYMENT-REQUIRED` response header, and that header is what
+`@x402/core`'s client reads. Its `getPaymentRequiredResponse` falls back to the body only when
+`x402Version` is `1`, so a v2 body served without the header fails as
+`Invalid payment required response` — a perfectly shaped offer that no real client can see.
+The body is served here anyway, because a legible `curl` is the whole point of the comparison,
+but it is a copy rather than the contract.
+
+With a facilitator configured, `accepts[0].extra` carries its `feePayer` (the account it
+sponsors fees from), copied verbatim from the matching `/supported` kind. `@x402/hedera`'s
+client signer throws without it, since the buyer's transfer has to name that account as its
+transaction-id payer for sponsorship to apply.
 
 ---
 
@@ -77,10 +99,10 @@ Same token, same base units, same recipient. The offer is in the body.
 
 | | MPP | x402 |
 |---|---|---|
-| Offer lives in | `WWW-Authenticate: Payment` (one per rail) | JSON response body, `accepts[]` |
-| Credential | `Authorization: Payment <base64url>` | `X-PAYMENT` (v1/v2), `PAYMENT-SIGNATURE` in v2 |
+| Offer lives in | `WWW-Authenticate: Payment` (one per rail) | `PAYMENT-REQUIRED` header, base64 JSON (body in v1) |
+| Credential | `Authorization: Payment <base64url>` | `PAYMENT-SIGNATURE` in v2, `X-PAYMENT` in v1 |
 | Receipt | `Payment-Receipt` response header | `PAYMENT-RESPONSE` header (v2) |
-| Body on 402 | RFC 9457 problem document | the offer itself |
+| Body on 402 | RFC 9457 problem document | the offer, repeated for legibility |
 
 MPP is a registered-shape HTTP authentication scheme: a `402` plus `WWW-Authenticate`, a
 retry with `Authorization`, exactly the challenge/response cycle `Basic` and `Bearer` use.
@@ -88,10 +110,12 @@ That has practical consequences. It composes with existing auth middleware, it s
 `HEAD` requests, and the resource's own response body is untouched by payment — a paid JSON
 API returns its JSON, not a payment envelope wrapped around it.
 
-x402 putting the offer in the body is simpler to read, simpler to log, and simpler to write
-by hand. You can `curl` an x402 endpoint and see the whole offer without decoding anything,
-which is worth more than it sounds when you are debugging at 2am. MPP's base64url `request`
-blobs are not hostile, but they are one step removed from legible.
+x402 v1 put the offer in the body, which was simpler to read, simpler to log and simpler to
+write by hand: you could `curl` an endpoint and see the whole offer without decoding anything,
+worth more than it sounds when you are debugging at 2am. v2 gave that up — the declaration
+moved into a base64 `PAYMENT-REQUIRED` header, so both protocols now hand you an opaque blob
+and both are one step removed from legible. A server is free to repeat the offer in the body,
+and this one does, but nothing in the protocol makes that copy authoritative.
 
 ---
 
@@ -237,17 +261,37 @@ Precision here, because a comparison that overstates its own implementation is w
   ([HashScan](https://hashscan.io/testnet/transaction/0.0.10672305@1790118570.306232317)).
 - **The Stripe card rail** is a second MPP method on that same challenge, live once the
   three `STRIPE_*` variables are set.
-- **x402 is the comparison rail.** It is gated on `AX402_FACILITATOR_URL` through `hasX402()`
-  in `lib/demo.ts` and shown as a third option on `/checkout`, disabled with a demo-mode note
-  until that variable is set. `/api/x402` serves the challenge body in §1, built from the
-  same `chargeRecipient()`, `USDC_TOKEN_ID` and `USDC_DECIMALS` as the Hedera offer on
-  `/api/pay`. `lib/x402.ts` asks the facilitator's `/supported` once per process whether it
-  lists `exact` on `hedera:testnet`. If it doesn't, or it can't be reached, the route stays in
-  demo mode rather than failing. x402 settlement is not wired end to end in this template. It
-  would need `POST /verify` and `POST /settle` against the facilitator plus a buyer-side
-  signing flow for the `exact` scheme on `hedera:testnet`, which is a second payment
-  integration rather than a corner of this one. A retried `X-PAYMENT` against a live
-  facilitator gets `501 Not Implemented`, not a receipt.
+- **x402 is the comparison rail, and it settles too.** It is gated on `AX402_FACILITATOR_URL`
+  through `hasX402()` in `lib/demo.ts` and shown as a third option on `/checkout`, disabled
+  with a demo-mode note until that variable is set. `/api/x402` serves the declaration in §1 —
+  in the `PAYMENT-REQUIRED` header and, as a copy, in the body — built from the same
+  `chargeRecipient()`, `USDC_TOKEN_ID` and `USDC_DECIMALS` as the Hedera offer on `/api/pay`.
+  `lib/x402.ts` asks the facilitator's `/supported` once per process whether it lists `exact`
+  on `hedera:testnet`; if it doesn't, or it can't be reached, the route stays in demo mode
+  rather than failing.
+
+  A retry carrying `PAYMENT-SIGNATURE` is checked against the offer this server made — scheme,
+  network, amount, asset and `payTo`, so a client cannot name its own terms — then run through
+  `POST /verify` and `POST /settle` against the facilitator. A successful settlement returns
+  `200` with the receipt in `PAYMENT-RESPONSE` and `X-PAYMENT-RESPONSE`. Transaction
+  `0.0.9839454@1790610422.322440321` is one it settled: 24 USDC of `0.0.5449` from buyer
+  `0.0.10762329` to `0.0.8569027`, fees sponsored by the facilitator's `feePayer`
+  ([HashScan](https://hashscan.io/testnet/transaction/0.0.9839454@1790610422.322440321)). The
+  buyer in that run was the official `@x402/fetch` client, not this repository's code —
+  `yarn e2e:x402 <buyer-key>` is the script.
+
+  What is **not** wired: x402 settlements are not recorded in `lib/orders.ts` and so do not
+  appear on `/receipt/[id]`. That store is keyed by MPP challenge id; an x402 payment reports
+  through its own `PAYMENT-RESPONSE` header and the 200 body instead. The `/checkout` page's x402
+  card has no `action`, so its "Pay with x402" button is inert even when the rail is live — a
+  browser-side x402 payment would need a Hedera key in the page, which is the wallet
+  integration MPP's rail has (`HederaPayButton`) and this one does not. x402 is bought from an
+  agent or a script here, not from the storefront.
+
+  One thing a buyer has to opt into, and it is the client's policy rather than this server's:
+  `@x402/hedera` treats `0.0.429274` as testnet USDC, while this store charges in `0.0.5449`
+  (see `lib/mppx.ts` for why), and `@x402/core`'s default spend cap is $1 per payment. Both
+  reject the offer client-side until `spendControls` allows the token and the amount.
 
 A related data point, from reading the `mppx` package itself: its own x402 adapter
 (`mppx/x402`) is EVM-only — `evmNetworkPrefix` is `'eip155:'` and its network type is

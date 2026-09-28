@@ -386,12 +386,20 @@ product-fallback rule and the same `X-MPP-Demo-Mode` convention:
 $ curl -si -H 'Accept: application/json' 'http://localhost:3000/api/x402?product=hbar-tee'
 HTTP/1.1 402 Payment Required
 x-mpp-demo-mode: x402
+payment-required: eyJ4NDAyVmVyc2lvbiI6MiwiZXJyb3IiOiJwYXltZW50IGlzIHJlcXVpcmVkIiwicmVzb3VyY2UiOns...
 
-{"x402Version":2,"error":"X-PAYMENT header is required","accepts":[{"scheme":"exact",
- "network":"hedera:testnet","maxAmountRequired":"24000000","resource":"http://localhost:3000/api/x402?product=hbar-tee",
- "description":"MPP Checkout — HBAR Logo Tee","mimeType":"application/json","payTo":"0.0.0",
- "maxTimeoutSeconds":60,"asset":"0.0.5449"}],"demo":true}
+{"x402Version":2,"error":"payment is required",
+ "resource":{"url":"http://localhost:3000/api/x402?product=hbar-tee",
+ "description":"MPP Checkout - HBAR Logo Tee","mimeType":"application/json","serviceName":"MPP Checkout"},
+ "accepts":[{"scheme":"exact","network":"hedera:testnet","amount":"24000000","asset":"0.0.5449",
+ "payTo":"0.0.0","maxTimeoutSeconds":30,"extra":{}}],"demo":true}
 ```
+
+The body is a convenience for reading `curl` output. **The declaration a client parses is the
+base64 `payment-required` header** — `@x402/core` only falls back to the body for
+`x402Version: 1`, so a v2 body with no header fails as `Invalid payment required response`. Note
+also that v2 names the amount `amount` (v1 called it `maxAmountRequired`) and carries `resource`
+as an object at the top level rather than a URL string inside `accepts[]`.
 
 With `AX402_FACILITATOR_URL` set, the server asks the facilitator's `/supported` once, on the
 first request (3s timeout), and caches the answer for the life of the process. If
@@ -400,9 +408,17 @@ is unreachable or doesn't list Hedera, the route stays in demo mode instead of f
 the other rails are unaffected. The x402 option on `/checkout` leaves demo mode whenever
 the variable is set.
 
-**Scope:** only the challenge side is implemented. Settlement (`/verify` and `/settle`
-against the facilitator, plus a buyer-side signing flow) is not wired, so a retried
-`X-PAYMENT` against a live facilitator gets `501 Not Implemented`, never a fake receipt.
+With a live facilitator the offer also carries `extra.feePayer` — the account the facilitator
+sponsors fees from, copied verbatim from the matching `/supported` kind. `@x402/hedera`'s client
+signer refuses to build a transaction without it, so an offer missing it is unpayable.
+
+**Scope:** the rail settles end to end. A retry carrying `PAYMENT-SIGNATURE` (v2's header;
+`X-PAYMENT` is accepted as v1's alias) is checked against the offer this server made, then run
+through the facilitator's `POST /verify` and `POST /settle`; a successful settlement returns
+`200` with the receipt in `PAYMENT-RESPONSE` and `X-PAYMENT-RESPONSE`. `yarn e2e:x402 <buyer-key>`
+drives the whole thing with the official `@x402/fetch` client against a running dev server and
+confirms the transfer on the Mirror Node. Nothing is recorded in `lib/orders.ts` — x402
+settlements do not appear on `/receipt/[id]`, which is MPP's.
 [`docs/mpp-vs-x402.md`](docs/mpp-vs-x402.md) compares the two challenge formats line by line.
 
 ## Going to production
@@ -463,6 +479,7 @@ transfer, retry with the credential, read the receipt.
 | `yarn format` | Prettier |
 | `yarn make:burner [hbar]` | Create and fund a testnet burner buyer; prints its account id and private key. Needs `HEDERA_OPERATOR_*` set |
 | `yarn e2e:charge <burner-key> [product]` | End-to-end charge against a running server: 402 → faucet → sign → retry → receipt. Needs `HEDERA_OPERATOR_*` set and `yarn next:dev` (or `yarn next:serve`) running |
+| `yarn e2e:x402 <buyer-key> [product]` | The same purchase over x402, driven by the official `@x402/fetch` client: 402 → faucet → sign → `PAYMENT-SIGNATURE` → facilitator settles → Mirror Node check. Needs `HEDERA_OPERATOR_*` and `AX402_FACILITATOR_URL` set, and a server running |
 
 There is deliberately **no `yarn next:start`**. It used to alias `next dev`, so anyone reaching
 for the obvious name after `yarn next:build` silently got a development server and smoke-tested
@@ -487,14 +504,14 @@ packages/nextjs/
     api/pay/              One MPP 402 advertising both hedera and stripe
     api/pay/token/        Mints a Stripe Shared Payment Token; 503 in demo mode
     api/testnet/fund/     Test-buyer USDC faucet; 403 unless the network is testnet
-    api/x402/             The same offer as an x402 v2 challenge (challenge side only)
+    api/x402/             The same offer as an x402 v2 challenge, settled via the facilitator
   lib/
     demo.ts               hasHedera() / hasStripe() / hasX402() — per-rail detection
     mppx.ts               MPP server: both charge methods, one challenge
     hederaCheckout.ts     Browser half of the Hedera rail (402 → sign → retry)
     hederaOperator.ts     Operator client and resolvedNetwork()
     orders.ts             Settled-order store, keyed by challenge id
-    x402.ts               Facilitator capability probe and canSettleX402()
+    x402.ts               Facilitator capability probe, canSettleX402(), verify/settle calls
     products.ts           Fixture catalogue (prices are decimal strings, never floats)
   components/             Storefront components + the Scaffold-HBAR wallet/theme stack
   public/products/        Local SVG placeholders — no product image is fetched remotely

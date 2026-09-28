@@ -6,10 +6,23 @@
  * here once per process and never allowed to throw: a third-party endpoint being slow, down,
  * or dropping Hedera must degrade this rail to demo mode and leave every other rail alone.
  *
+ * `verifyPayment` and `settlePayment` are the two calls that actually move money. They are
+ * deliberately *not* memoized and deliberately *do* throw — a failed settlement must surface,
+ * not silently downgrade to demo mode.
+ *
  * Server-only: reads unprefixed environment variables. Import from route handlers only.
  */
 import { hasX402 } from "./demo";
 import { HEDERA_NETWORK } from "./mppx";
+import type {
+  Network,
+  PaymentPayload,
+  PaymentRequirements,
+  SettleResponse,
+  SupportedKind,
+  SupportedResponse,
+  VerifyResponse,
+} from "@x402/core/types";
 
 /**
  * The facilitator names Hedera with a CAIP-2-style namespace, not `eip155:296`. The chain-id
@@ -18,33 +31,58 @@ import { HEDERA_NETWORK } from "./mppx";
  * Ax402 facilitator this template targets, so mainnet resolves to demo mode.
  */
 const X402_NETWORKS = { testnet: "hedera:testnet", mainnet: "hedera:mainnet" } as const;
-export const X402_NETWORK = X402_NETWORKS[HEDERA_NETWORK];
+export const X402_NETWORK: Network = X402_NETWORKS[HEDERA_NETWORK];
 export const X402_SCHEME = "exact";
 export const X402_VERSION = 2;
 
+/** Capability probe: cheap, run on every unpaid request, must not stall the challenge. */
 const FACILITATOR_TIMEOUT_MS = 3_000;
+/**
+ * Settlement submits a `TransferTransaction` and waits for its Hedera receipt, so it is on a
+ * different order of magnitude from the probe. 30s matches the `maxTimeoutSeconds` the offer
+ * advertises.
+ */
+const SETTLE_TIMEOUT_MS = 30_000;
 
-export type X402Capability = { live: true } | { live: false; reason: string };
+/**
+ * `extra` on a live capability is the matched `/supported` kind's own `extra`, verbatim. For
+ * Hedera `exact` it carries `feePayer` — the account the facilitator sponsors fees from, and
+ * the account `@x402/hedera`'s client signer requires in `paymentRequirements.extra` before it
+ * will build a transaction at all. Without it no x402 client can pay this rail.
+ */
+export type X402Capability = { live: true; extra: Record<string, unknown> } | { live: false; reason: string };
 
-type SupportedKind = { scheme?: unknown; network?: unknown };
+/** Configured facilitator base URL with any trailing slashes removed, or `null` in demo mode. */
+export function facilitatorUrl(): string | null {
+  const configured = process.env.AX402_FACILITATOR_URL?.trim();
+  return configured ? configured.replace(/\/+$/, "") : null;
+}
 
 async function probeFacilitator(): Promise<X402Capability> {
-  if (!hasX402()) return { live: false, reason: "AX402_FACILITATOR_URL is not set" };
+  const base = facilitatorUrl();
+  if (!base) return { live: false, reason: "AX402_FACILITATOR_URL is not set" };
 
-  const url = `${process.env.AX402_FACILITATOR_URL!.trim().replace(/\/+$/, "")}/supported`;
   try {
-    const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(FACILITATOR_TIMEOUT_MS) });
+    const response = await fetch(`${base}/supported`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FACILITATOR_TIMEOUT_MS),
+    });
     if (response.status !== 200) return { live: false, reason: `facilitator /supported answered ${response.status}` };
 
-    const body = (await response.json()) as { kinds?: unknown };
+    const body = (await response.json()) as Partial<SupportedResponse>;
     if (!Array.isArray(body?.kinds)) return { live: false, reason: "facilitator /supported returned no kinds array" };
 
-    const supported = (body.kinds as SupportedKind[]).some(
-      kind => kind?.scheme === X402_SCHEME && kind?.network === X402_NETWORK,
+    // Match the protocol version too: a facilitator listing `exact` on Hedera for v1 only
+    // cannot settle the v2 payload this route issues.
+    const kind = (body.kinds as SupportedKind[]).find(
+      candidate =>
+        candidate?.scheme === X402_SCHEME &&
+        candidate?.network === X402_NETWORK &&
+        candidate?.x402Version === X402_VERSION,
     );
-    return supported
-      ? { live: true }
-      : { live: false, reason: `facilitator does not list ${X402_SCHEME} on ${X402_NETWORK}` };
+    return kind
+      ? { live: true, extra: kind.extra ?? {} }
+      : { live: false, reason: `facilitator does not list ${X402_SCHEME} v${X402_VERSION} on ${X402_NETWORK}` };
   } catch (error) {
     const detail = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
     return { live: false, reason: `facilitator /supported unreachable (${detail})` };
@@ -66,6 +104,65 @@ export function x402Capability(): Promise<X402Capability> {
 /** The one question route code should ask: configured, and the facilitator can settle Hedera. */
 export async function canSettleX402(): Promise<boolean> {
   return hasX402() && (await x402Capability()).live;
+}
+
+/**
+ * `POST /verify` or `POST /settle`. The wire body is the one `@x402/core`'s own
+ * `HTTPFacilitatorClient` sends, so a facilitator that works with the reference resource
+ * server works with this one.
+ *
+ * Throws on anything that is not a well-formed JSON response — a facilitator that is down,
+ * slow or answering HTML is a 502 from this route, never a silent pass.
+ */
+async function facilitatorPost<T>(
+  operation: "verify" | "settle",
+  paymentPayload: PaymentPayload,
+  paymentRequirements: PaymentRequirements,
+): Promise<T> {
+  const base = facilitatorUrl();
+  if (!base) throw new Error("AX402_FACILITATOR_URL is not set");
+
+  const response = await fetch(`${base}/${operation}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    cache: "no-store",
+    body: JSON.stringify({ x402Version: paymentPayload.x402Version, paymentPayload, paymentRequirements }),
+    signal: AbortSignal.timeout(SETTLE_TIMEOUT_MS),
+  });
+
+  const text = await response.text();
+  let body: unknown;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    throw new Error(`facilitator /${operation} returned non-JSON (${response.status}): ${text.slice(0, 200)}`);
+  }
+
+  // A rejected payment is a normal outcome reported in the body (`isValid: false` /
+  // `success: false`), and the facilitator may send it with a 4xx. Pass those through so the
+  // route can report the reason; only a body that carries no verdict at all is an error.
+  const hasVerdict =
+    typeof body === "object" && body !== null && (operation === "verify" ? "isValid" : "success") in body;
+  if (!response.ok && !hasVerdict) {
+    throw new Error(`facilitator /${operation} failed (${response.status}): ${text.slice(0, 200)}`);
+  }
+  return body as T;
+}
+
+/** Asks the facilitator whether a payment payload satisfies the requirements it names. */
+export function verifyPayment(
+  paymentPayload: PaymentPayload,
+  paymentRequirements: PaymentRequirements,
+): Promise<VerifyResponse> {
+  return facilitatorPost<VerifyResponse>("verify", paymentPayload, paymentRequirements);
+}
+
+/** Asks the facilitator to broadcast the payment. On success the response names the transaction. */
+export function settlePayment(
+  paymentPayload: PaymentPayload,
+  paymentRequirements: PaymentRequirements,
+): Promise<SettleResponse> {
+  return facilitatorPost<SettleResponse>("settle", paymentPayload, paymentRequirements);
 }
 
 /**

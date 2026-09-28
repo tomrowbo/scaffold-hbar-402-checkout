@@ -735,6 +735,33 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@hiero-ledger/cryptography@npm:1.19.0":
+  version: 1.19.0
+  resolution: "@hiero-ledger/cryptography@npm:1.19.0"
+  dependencies:
+    "@noble/curves": 1.8.1
+    ansi-regex: 6.2.2
+    ansi-styles: 6.2.3
+    asn1js: 3.0.6
+    bignumber.js: 11.1.2
+    bn.js: 5.2.3
+    buffer: 6.0.3
+    crypto-js: 4.2.0
+    debug: 4.4.1
+    forge-light: 1.1.4
+    js-base64: 3.7.7
+    react-native-get-random-values: 2.0.0
+    spark-md5: 3.0.2
+    strip-ansi: 7.1.2
+    tweetnacl: 1.0.3
+    utf8: 3.0.0
+  peerDependenciesMeta:
+    expo-crypto:
+      optional: true
+  checksum: edb77d050adfb44dd6477dc0bebf2f2aeeb356b3d7e11d00b2ba9a9f65dede67a3447d3628dfa0ffdd148facf38a99dc624e8f03412c17719d5bd93c17263caa
+  languageName: node
+  linkType: hard
+
 "@hiero-ledger/cryptography@npm:1.21.0":
   version: 1.21.0
   resolution: "@hiero-ledger/cryptography@npm:1.21.0"
@@ -786,6 +813,34 @@ __metadata:
     protobufjs: 8.0.1
     strip-ansi: 7.1.2
   checksum: 308514d601fef6f2347a97c44805508728bc26f783a12ee037baa520e265b2c987b975849a26dae20e40080857656decffa14463dd106109d2cc69423e28fc37
+  languageName: node
+  linkType: hard
+
+"@hiero-ledger/sdk@npm:2.85.0":
+  version: 2.85.0
+  resolution: "@hiero-ledger/sdk@npm:2.85.0"
+  dependencies:
+    "@grpc/grpc-js": 1.12.6
+    "@hiero-ledger/cryptography": 1.19.0
+    "@hiero-ledger/proto": 2.31.0
+    ansi-regex: 6.2.2
+    ansi-styles: 6.2.3
+    bignumber.js: 11.1.2
+    bn.js: 5.2.3
+    crypto-js: 4.2.0
+    debug: 4.4.1
+    ethers: 6.16.0
+    js-base64: 3.7.4
+    long: 5.3.1
+    pino: 10.1.0
+    pino-pretty: 13.0.0
+    protobufjs: 8.2.0
+    rfc4648: 1.5.3
+    strip-ansi: 7.1.2
+    utf8: 3.0.0
+  peerDependencies:
+    bn.js: 5.2.3
+  checksum: 9c1bc0a3c262c8e2d8a43b40c264f44b6bd56041d042e7e7f9e3c60e62d87d7f6fa575d364b737e20f07c39622c76453d78325ee0606c04b34c14e8064c83f2d
   languageName: node
   linkType: hard
 
@@ -2299,6 +2354,9 @@ __metadata:
     "@types/node": ^18.19.50
     "@types/react": ^19.0.7
     "@walletconnect/modal": ^2.7.0
+    "@x402/core": 2.27.0
+    "@x402/fetch": 2.27.0
+    "@x402/hedera": 2.27.0
     abitype: 1.0.6
     assert: ^2.1.0
     blo: ^1.2.0
@@ -4287,6 +4345,35 @@ __metadata:
     "@walletconnect/window-getters": ^1.0.1
     tslib: 1.14.1
   checksum: e82aea7195c6fe95c00e87bb38051c5549838c2e8302da94f1afa48206f79f0b620166c9820f847494505d282d1568e2086a1561b0493d2d0a1fa115f9106aef
+  languageName: node
+  linkType: hard
+
+"@x402/core@npm:2.27.0, @x402/core@npm:~2.27.0":
+  version: 2.27.0
+  resolution: "@x402/core@npm:2.27.0"
+  dependencies:
+    zod: ^3.24.2
+  checksum: 2160449cfd3e0bf0fc0a995932e149f4d52247a2fe6f63bc2c626d78555acf35807c2dce5e1eb6818d651a0acdf9b171274dd68be71602d171bb30c5f74f1be0
+  languageName: node
+  linkType: hard
+
+"@x402/fetch@npm:2.27.0":
+  version: 2.27.0
+  resolution: "@x402/fetch@npm:2.27.0"
+  dependencies:
+    "@x402/core": ~2.27.0
+  checksum: c0fbbe289e5cb69ba04ca6c120558c53a5827fb087122262f9c42c7566b9ae882046f7bd4d0b7971142938f320caa5b371ba1257e907615c338b283c38be6bdd
+  languageName: node
+  linkType: hard
+
+"@x402/hedera@npm:2.27.0":
+  version: 2.27.0
+  resolution: "@x402/hedera@npm:2.27.0"
+  dependencies:
+    "@hiero-ledger/proto": 2.31.0
+    "@hiero-ledger/sdk": 2.85.0
+    "@x402/core": ~2.27.0
+  checksum: f7f4a59058edb3aac1858735c6aaca8f1ae870ad949851486e1753de2f8b48de630f48e6bbec34c568974e75dc459996c95ff5b12e84fae1604f1223c689d446
   languageName: node
   linkType: hard
 
@@ -9207,6 +9294,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"protobufjs@npm:8.2.0":
+  version: 8.2.0
+  resolution: "protobufjs@npm:8.2.0"
+  dependencies:
+    "@types/node": ">=13.7.0"
+    long: ^5.0.0
+  checksum: be6f2e73b156701b87e42b1965071f820d10abce7e48815fc00af6e314d34a85eba5e56d754bb565251ad03ce135cc55994ef287c134c29e1e7099c6d055c5e7
+  languageName: node
+  linkType: hard
+
 "protobufjs@npm:8.6.6":
   version: 8.6.6
   resolution: "protobufjs@npm:8.6.6"
@@ -9409,6 +9506,17 @@ __metadata:
   peerDependencies:
     react-native: ">=0.56"
   checksum: 07729f70a007f7a3b8f98ebf687c1298ba288b87dd71d8ba385be6b5a377718b27b97547bbe1db6b225b83ee109dfce0b01721e6ed535d53892f3ac81e6bf975
+  languageName: node
+  linkType: hard
+
+"react-native-get-random-values@npm:2.0.0":
+  version: 2.0.0
+  resolution: "react-native-get-random-values@npm:2.0.0"
+  dependencies:
+    fast-base64-decode: ^1.0.0
+  peerDependencies:
+    react-native: ">=0.81"
+  checksum: 57e80fa836e61d5ff08d31cfb3df45c00a6616651b3f7521af2d4fd6456aefd05e17eb21a269d458ada0dd58bc8c25eef6b43097eefc542ab6186072f6b653a3
   languageName: node
   linkType: hard
 
@@ -11418,7 +11526,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:^3.24.4":
+"zod@npm:^3.24.2, zod@npm:^3.24.4":
   version: 3.25.76
   resolution: "zod@npm:3.25.76"
   checksum: c9a403a62b329188a5f6bd24d5d935d2bba345f7ab8151d1baa1505b5da9f227fb139354b043711490c798e91f3df75991395e40142e6510a4b16409f302b849

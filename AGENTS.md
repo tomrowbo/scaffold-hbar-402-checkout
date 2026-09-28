@@ -40,7 +40,7 @@ These read server-only variables, so call them from server components or route h
 | `/api/pay` | One MPP 402 advertising **both** `hedera` and `stripe`, always. HTML for browsers: a real Stripe Elements form when `hasStripe()`, otherwise a disabled `demo mode` panel |
 | `/api/pay/token` | Mints a Stripe Shared Payment Token for the card form; 503 in demo mode |
 | `/api/testnet/fund` | Test-buyer USDC faucet; 403 unless the resolved network is testnet |
-| `/api/x402` | x402 v2 payment-required `402` for the same product, amount, token and recipient as `/api/pay`. `demo: true` + `X-MPP-Demo-Mode: x402` (and a disabled HTML panel for browsers) unless `canSettleX402()`. Challenge side only — settlement is not wired |
+| `/api/x402` | x402 v2 payment-required `402` for the same product, amount, token and recipient as `/api/pay`, in the base64 `PAYMENT-REQUIRED` header **and** the body. `demo: true` + `X-MPP-Demo-Mode: x402` (and a disabled HTML panel for browsers) unless `canSettleX402()`. A `PAYMENT-SIGNATURE` retry is verified and settled through the facilitator; `200` carries `PAYMENT-RESPONSE` |
 
 ## Production switches — do not weaken
 
@@ -66,7 +66,7 @@ packages/nextjs/
     demo.ts               Per-integration credential detection
     mppx.ts               MPP server: Hedera + Stripe charge methods, one challenge
     hederaOperator.ts     Operator client + resolvedNetwork() switch
-    x402.ts               Facilitator capability probe (memoized), canSettleX402()
+    x402.ts               Facilitator capability probe (memoized), canSettleX402(), verify/settle
     products.ts           Fixture catalogue (Product[])
   hooks/
     useHederaSigner.ts    Wallet + Hedera account identity
@@ -81,7 +81,7 @@ packages/nextjs/
 
 **Catalogue:** `lib/products.ts` exports `products: Product[]` where `Product = { id, name, priceUsd, image }`. Prices are decimal strings (`"12.00"`), never numbers — no float arithmetic on money. Images are local paths under `public/`; do not introduce remote image hosts, which break behind a firewall.
 
-**x402 is a separate protocol, not an MPP method.** It never goes into the `methods` array in `lib/mppx.ts` and never touches `/api/pay`. `/api/x402` reuses `chargeRecipient()`, `USDC_TOKEN_ID` and `USDC_DECIMALS` from `lib/mppx.ts` so the protocol envelope is the only difference between the two endpoints; keep it that way. `hasX402()` stays a synchronous env check — the network question ("does the facilitator list `exact` on `hedera:testnet`?") lives in `lib/x402.ts`'s `x402Capability()`, probed once per process with a 3s timeout and never throwing. Route code calls `canSettleX402()`. The network id is `hedera:testnet`, never `eip155:296`. Settlement (`POST /verify` / `POST /settle` plus a buyer signing flow) is deliberately not implemented: a retried `X-PAYMENT` against a live facilitator gets `501`, and nothing is recorded in `lib/orders.ts`. Don't add receipt or order branches for `x402` until a real payment can reach them.
+**x402 is a separate protocol, not an MPP method.** It never goes into the `methods` array in `lib/mppx.ts` and never touches `/api/pay`. `/api/x402` reuses `chargeRecipient()`, `USDC_TOKEN_ID` and `USDC_DECIMALS` from `lib/mppx.ts` so the protocol envelope is the only difference between the two endpoints; keep it that way. `hasX402()` stays a synchronous env check — the network question ("does the facilitator list `exact` on `hedera:testnet`?") lives in `lib/x402.ts`'s `x402Capability()`, probed once per process with a 3s timeout and never throwing. Route code calls `canSettleX402()`. The network id is `hedera:testnet`, never `eip155:296`. Three v2 details are load-bearing and easy to regress: the declaration a client parses is the base64 `PAYMENT-REQUIRED` **header** (`@x402/core` only falls back to the body for v1); the offer field is `amount`, not v1's `maxAmountRequired`, with `resource` as a top-level object; and `accepts[].extra.feePayer` must be copied from the matching `/supported` kind, because `@x402/hedera`'s client signer refuses to build a transaction without it. Settlement runs `POST /verify` then `POST /settle` against the facilitator and returns `PAYMENT-RESPONSE`. Nothing is recorded in `lib/orders.ts` — that store is keyed by MPP challenge id and backs `/receipt/[id]`; x402 settlements report through their own header and body instead. `yarn e2e:x402 <buyer-key>` proves the rail with the official client.
 
 **Wallet + identity:** `useHederaSigner` wraps connection state and `requireProvider()` for mutations. Account IDs use `0.0.xxxxx` form; helpers in `utils/scaffold-hbar/hederaIdentity.ts` normalize EVM ↔ native identity. The burner connector must keep working — on-chain validation injects a key at `localStorage.burnerWallet.pk`.
 

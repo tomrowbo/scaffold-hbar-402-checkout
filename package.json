@@ -21,6 +21,7 @@
     "next:dev": "yarn workspace @sh/nextjs dev",
     "make:burner": "yarn workspace @sh/nextjs make:burner",
     "e2e:charge": "yarn workspace @sh/nextjs e2e:charge",
+    "e2e:x402": "yarn workspace @sh/nextjs e2e:x402",
     "harness:run": "hedera-harness run .harness/spec.yaml"
   },
   "packageManager": "yarn@3.2.3",
