@@ -51,7 +51,7 @@ These read server-only variables, so call them from server components or route h
   of this template, and dropping the card rail without credentials would hide that from
   anyone running it unconfigured. Demo mode is made honest in the UI — the browser page
   renders a disabled `demo mode` panel — not by removing the offer.
-- `lib/mppx.ts` throws at module load when the insecure default `MPP_SECRET_KEY` would be used on mainnet or with a live Stripe key.
+- `lib/mppx.ts` throws at module load when the insecure default `MPP_SECRET_KEY` would be used on mainnet or with a live Stripe key. Route modules load lazily, so this surfaces as a 500 on the first request to a paid route, not as a failed startup — a deploy smoke test has to request one.
 - Import Stripe's method from `mppx/stripe/server/spt` and `Mppx` from `mppx/server/core`. The plain `mppx/server` and `mppx/stripe/server` entry points pull in Tempo, which fails to load against the pinned viem.
 
 ## Layout
@@ -201,10 +201,19 @@ console.log("receipt:", paid.headers.get("payment-receipt"));
 console.log(`https://hashscan.io/testnet/transaction/${transactionId}`);
 ```
 
-`packages/nextjs/.e2e-charge.mjs` is the same flow in *pull* mode — the agent signs the
-transfer and the **server** submits it through the operator account. Use pull mode when the
-payer cannot reach the Hedera gRPC endpoints (a browser, a locked-down sandbox); the
-transaction id still names the payer's account, so they still pay the fee.
+`packages/nextjs/scripts/e2e-charge.mjs` — run it with `yarn e2e:charge <burner-key>
+[product]` — is the same flow in *pull* mode: the agent signs the transfer and the **server**
+submits it through the operator account. Use pull mode when the payer cannot reach the Hedera
+gRPC endpoints (a browser, a locked-down sandbox); the transaction id still names the payer's
+account, so they still pay the fee.
+
+That script lives inside the `packages/nextjs` workspace, and it has to. `.yarnrc.yml` sets
+`nmHoistingLimits: workspaces`, so `mppx` and `mppx-hedera` are installed under
+`packages/nextjs/node_modules` and never at the repo root. Node resolves bare specifiers by
+walking up from the *script's own* directory, so a copy of this script at `<root>/scripts/`
+fails with `ERR_MODULE_NOT_FOUND: Cannot find package 'mppx'` no matter what the cwd is —
+`NODE_PATH` does not apply to ESM either. Any new script that imports a workspace dependency
+belongs in `packages/nextjs/scripts/`.
 
 ### Shorter, with the packaged client method
 

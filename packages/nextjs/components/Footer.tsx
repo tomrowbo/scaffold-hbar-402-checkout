@@ -20,9 +20,11 @@ export const Footer = () => {
           <div className="flex flex-col md:flex-row gap-2 pointer-events-auto">
             {nativeCurrencyPrice > 0 && (
               <div>
-                <div className="btn btn-primary btn-sm font-normal gap-1 cursor-auto">
+                {/* Labelled: an unexplained floating price pill reads as part of the checkout. */}
+                <div className="btn btn-primary btn-sm font-normal gap-1 cursor-auto" title="Current HBAR price in USD">
                   <CurrencyDollarIcon className="h-4 w-4" />
                   <span>{nativeCurrencyPrice.toFixed(2)}</span>
+                  <span className="opacity-70">/ HBAR</span>
                 </div>
               </div>
             )}

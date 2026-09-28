@@ -6,10 +6,12 @@
     "build": "next build",
     "check-types": "tsc --noEmit --incremental",
     "dev": "next dev",
+    "e2e:charge": "node scripts/e2e-charge.mjs",
     "format": "prettier --write . '!(node_modules|.next|contracts)/**/*'",
     "lint": "next lint",
+    "make:burner": "node scripts/make-burner.mjs",
     "serve": "next start",
-    "start": "next dev"
+    "start": "next start"
   },
   "dependencies": {
     "@hashgraph/hedera-wallet-connect": "^2.1.1",

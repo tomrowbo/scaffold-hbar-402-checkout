@@ -10,6 +10,10 @@
  * The network check is the first thing the handler does and reads `resolvedNetwork()`
  * directly. This route transfers operator USDC to any posted account id, so on mainnet it
  * would be an unauthenticated drain — no configuration may turn it on there.
+ *
+ * It is not, however, the first thing that runs: importing `~~/lib/mppx` below evaluates that
+ * module's `MPP_SECRET_KEY` guard, so on mainnet with no secret key the request fails with a
+ * 500 before this handler is entered. Both outcomes refuse; only the 403 is this route's.
  */
 import { AccountId, TokenAssociateTransaction, TokenId, Transaction, TransferTransaction } from "@hiero-ledger/sdk";
 import { operatorClient, resolvedNetwork } from "~~/lib/hederaOperator";

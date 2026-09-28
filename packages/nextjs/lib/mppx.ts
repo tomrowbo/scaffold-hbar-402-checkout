@@ -99,9 +99,14 @@ export function realmFromRequest(request: Request): string {
 const INSECURE_DEV_SECRET_KEY = "mpp-checkout-dev-only-insecure-secret-do-not-deploy";
 
 /**
- * Throws at module load — so `next start` / the first import fails, not some later request —
- * when real money could be accepted against the public default: on mainnet, or with a live
- * Stripe key.
+ * Throws at module load when real money could be accepted against the public default: on
+ * mainnet, or with a live Stripe key.
+ *
+ * Note what "module load" buys and what it does not. It guarantees no challenge is ever
+ * signed with the public key and no request can slip past — but Next.js loads route modules
+ * lazily, so the server still starts, reports ready and binds the port. The first request to
+ * a route importing this module gets a 500. Nothing fails at boot, so a deploy check must hit
+ * a paid route rather than trusting startup. See "Smoke-test a paid route" in the README.
  */
 function mppSecretKey(): string {
   const configured = process.env.MPP_SECRET_KEY?.trim();
