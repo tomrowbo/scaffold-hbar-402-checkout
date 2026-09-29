@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckoutError, hasBurnerSigner } from "~~/lib/hederaBuyer";
-import { payWithX402 } from "~~/lib/x402Checkout";
+// SDK-free on purpose — see the note in HederaPayButton. `lib/x402Checkout` brings the
+// whole @x402 client stack (viem, the Hedera signer) and loads on click instead.
+import { CheckoutError, hasBurnerSigner } from "~~/lib/checkoutCommon";
 
 type X402PayButtonProps = {
   productId: string;
@@ -35,6 +36,7 @@ export const X402PayButton = ({ productId, priceUsd, enabled }: X402PayButtonPro
   const pay = useCallback(async () => {
     setStatus({ kind: "working", message: "Requesting an x402 challenge…" });
     try {
+      const { payWithX402 } = await import("~~/lib/x402Checkout");
       const order = await payWithX402({
         productId,
         onProgress: message => setStatus({ kind: "working", message }),

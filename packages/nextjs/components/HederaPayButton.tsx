@@ -4,10 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Transaction } from "@hiero-ledger/sdk";
 import { useHederaSigner } from "~~/hooks/useHederaSigner";
-import { CheckoutError, hasBurnerSigner } from "~~/lib/hederaBuyer";
-import { payWithHedera } from "~~/lib/hederaCheckout";
+// SDK-free on purpose: importing these from `lib/hederaBuyer` would pull @hiero-ledger/sdk
+// into the first load of /checkout. The settlement code is imported on click instead.
+import { CheckoutError, hasBurnerSigner } from "~~/lib/checkoutCommon";
 import { hederaCaipId } from "~~/utils/scaffold-hbar/hederaIdentity";
-import { transactionToBase64String } from "~~/utils/scaffold-hbar/hederaTxUtils";
 
 type HederaPayButtonProps = {
   productId: string;
@@ -39,6 +39,13 @@ export const HederaPayButton = ({ productId, priceUsd, enabled }: HederaPayButto
   const pay = useCallback(async () => {
     setStatus({ kind: "working", message: "Requesting a payment challenge…" });
     try {
+      // Loaded here rather than at the top of the file: between them these two pull the
+      // Hedera SDK and its protobuf runtime, which no one needs until they decide to pay.
+      const [{ payWithHedera }, { transactionToBase64String }] = await Promise.all([
+        import("~~/lib/hederaCheckout"),
+        import("~~/utils/scaffold-hbar/hederaTxUtils"),
+      ]);
+
       const wallet =
         provider && accountId
           ? {
