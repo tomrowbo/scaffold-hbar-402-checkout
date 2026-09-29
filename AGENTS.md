@@ -71,7 +71,7 @@ packages/nextjs/
   hooks/
     useHederaSigner.ts    Wallet + Hedera account identity
     scaffold-hbar/        Shared Scaffold-HBAR hooks (useTargetNetwork, …)
-  public/products/        Local SVG placeholders — no remote image fetches
+  public/products/        Local product photos — no remote image fetches
   utils/scaffold-hbar/    Hedera tx helpers, identity
   scaffold.config.ts      Target networks (testnet, mainnet), RPC, WalletConnect
   contracts/              deployedContracts.ts (empty — no Solidity workspace)

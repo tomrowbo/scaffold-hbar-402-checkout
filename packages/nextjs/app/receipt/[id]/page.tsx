@@ -94,7 +94,15 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
           <div className="card-body gap-5 py-6">
             <div className="flex items-center gap-4">
               <div className="relative w-16 h-16 shrink-0 rounded-lg overflow-hidden bg-base-200">
-                <Image src={product.image} alt={product.name} fill unoptimized className="object-cover" />
+                <Image
+                  src={product.image}
+                  alt={product.name}
+                  fill
+                  sizes="64px"
+                  priority
+                  unoptimized
+                  className="object-cover"
+                />
               </div>
               <div className="grow">
                 <h2 className="card-title text-base m-0">{product.name}</h2>

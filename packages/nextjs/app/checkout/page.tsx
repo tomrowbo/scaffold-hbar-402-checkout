@@ -63,7 +63,15 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
         <div className="card border border-base-300 bg-base-100 shadow-sm mb-8">
           <div className="card-body flex-row items-center gap-4 py-5">
             <div className="relative w-20 h-20 shrink-0 rounded-lg overflow-hidden bg-base-200">
-              <Image src={product.image} alt={product.name} fill unoptimized className="object-cover" />
+              <Image
+                src={product.image}
+                alt={product.name}
+                fill
+                sizes="80px"
+                priority
+                unoptimized
+                className="object-cover"
+              />
             </div>
             <div className="grow">
               <h2 className="card-title text-base m-0">{product.name}</h2>

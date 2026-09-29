@@ -65,7 +65,7 @@ Three things to expect on a first run, none of them a problem:
   the versions wagmi and Next.js pin here. Nothing is missing and nothing is broken — both
   on-chain rails settle against exactly these versions, and the walkthrough below proves it
   on the Mirror Node. `sharp` is Next.js's optional image-optimisation dependency; this
-  template ships local SVGs and never calls it.
+  template ships local images and renders them `unoptimized`, so it never calls it.
 - The dev server prints `Ready in ~2.5s` and *then* compiles the first page you open, which
   takes about **30 seconds** (`✓ Compiled / in 30.4s (11154 modules)`).
 - **Every route is slow on its first visit** — `/`, `/checkout` *and* `/receipt/[id]`, 10–30s
@@ -656,7 +656,7 @@ packages/nextjs/
     x402Checkout.ts       Browser half of the x402 rail (402 → partially sign → settle)
     products.ts           Fixture catalogue (prices are decimal strings, never floats)
   components/             Storefront components + the Scaffold-HBAR wallet/theme stack
-  public/products/        Local SVG placeholders — no product image is fetched remotely
+  public/products/        Local product photos — no product image is fetched remotely
   scripts/
     make-burner.mjs       Creates and funds a throwaway testnet buyer
     e2e-charge.mjs        Exercises the pull-mode Hedera payment path end to end

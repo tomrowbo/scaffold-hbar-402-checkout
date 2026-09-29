@@ -46,8 +46,9 @@ export default function StorePage() {
         </div>
 
         <section aria-label="Products" className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-          {products.map(product => (
-            <ProductCard key={product.id} product={product} />
+          {products.map((product, index) => (
+            // The first card is the LCP element on a cold load; preload only that one.
+            <ProductCard key={product.id} product={product} priority={index === 0} />
           ))}
         </section>
       </div>
