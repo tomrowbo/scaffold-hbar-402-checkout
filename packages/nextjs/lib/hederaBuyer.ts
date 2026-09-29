@@ -91,10 +91,15 @@ export function parseBurnerKey(raw: string): PrivateKey {
  * Tops the buyer up from the operator account so a fresh test signer — which validation
  * funds with HBAR only — can actually pay a USDC-denominated charge. Testnet only, and a
  * no-op unless the server has operator credentials.
+ *
+ * `amount` is the charge this buyer is about to pay. Without it the faucet has to assume the
+ * priciest item in the catalogue, which fails on an operator that could comfortably cover
+ * the item actually being bought.
  */
 async function topUpBuyer(args: {
   accountId: string;
   tokenId: string;
+  amount: bigint;
   associateTransaction?: string;
   onProgress?: ChargeProgress;
 }) {
@@ -102,7 +107,11 @@ async function topUpBuyer(args: {
   const response = await fetch("/api/testnet/fund", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ accountId: args.accountId, associateTransaction: args.associateTransaction }),
+    body: JSON.stringify({
+      accountId: args.accountId,
+      amount: String(args.amount),
+      associateTransaction: args.associateTransaction,
+    }),
   });
   const body = (await response.json().catch(() => ({}))) as { error?: string; detail?: string };
   if (!response.ok) {
@@ -172,6 +181,7 @@ export async function ensureBuyerFunded(args: {
   await topUpBuyer({
     accountId: args.payer,
     tokenId: args.tokenId,
+    amount: args.amount,
     associateTransaction,
     onProgress: args.onProgress,
   });

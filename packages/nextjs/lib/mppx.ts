@@ -22,7 +22,7 @@
  */
 import { hasHedera, hasStripe } from "./demo";
 import { resolvedNetwork } from "./hederaOperator";
-import type { Method } from "mppx";
+import { Errors, type Method } from "mppx";
 import { hedera } from "mppx-hedera/server";
 import { Mppx } from "mppx/server/core";
 import { stripe } from "mppx/stripe/server/spt";
@@ -158,6 +158,71 @@ const STRIPE_DEMO_NETWORK_ID = "demo";
 const STRIPE_DEMO_SECRET_KEY = "sk_test_demo00000000000000000000000000000000000000000000";
 
 /**
+ * What a failing Hedera receipt status means for the buyer, and what they can do about it.
+ * Only the statuses a testnet checkout realistically produces; anything else is reported by
+ * name alone rather than guessed at.
+ */
+const RECEIPT_STATUS_CAUSES: Record<string, string> = {
+  INSUFFICIENT_TOKEN_BALANCE: `the buyer does not hold enough ${USDC_TOKEN_ID} to cover the charge; top it up with POST /api/testnet/fund, or send it the token directly`,
+  TOKEN_NOT_ASSOCIATED_TO_ACCOUNT: `the buyer has not associated token ${USDC_TOKEN_ID}, so it cannot hold or spend it`,
+  INSUFFICIENT_PAYER_BALANCE: "the buyer has no HBAR left to pay the transaction fee",
+  INSUFFICIENT_ACCOUNT_BALANCE: "the buyer has no HBAR left to pay the transaction fee",
+  TRANSACTION_EXPIRED: "the signed transfer reached the network more than 180 seconds after it was frozen",
+  ACCOUNT_FROZEN_FOR_TOKEN: `the buyer is frozen for token ${USDC_TOKEN_ID}`,
+};
+
+/**
+ * Re-raises whatever a method's `verify` threw as one of mppx's own payment errors.
+ *
+ * mppx turns anything else into a bare `InternalPaymentError` — `500` with the body
+ * `"An internal payment error occurred."` and the cause left in the server log. `mppx-hedera`
+ * raises named errors for most failures, but in pull mode the Hedera SDK throws first: a
+ * submitted transfer that comes back with a failing receipt raises `ReceiptStatusError`
+ * before the library's own status check runs. So the one failure a buyer actually hits — an
+ * empty wallet — is the one that reaches them with nothing in it.
+ *
+ * `VerificationFailedError` is what `mppx-hedera` uses for every failure it does catch, and
+ * it is the honest answer here too: the transfer was rejected, and a buyer who funds the
+ * account can retry the same challenge.
+ */
+function asPaymentError(error: unknown): unknown {
+  if (error instanceof Errors.PaymentError) return error;
+
+  const receipt = error as { status?: { toString(): string }; transactionId?: { toString(): string } } | null;
+  const status = receipt?.status?.toString();
+  if (!status) {
+    return new Errors.VerificationFailedError({
+      reason: error instanceof Error ? error.message : String(error),
+    });
+  }
+
+  const cause = RECEIPT_STATUS_CAUSES[status];
+  const transactionId = receipt?.transactionId?.toString();
+  return new Errors.VerificationFailedError({
+    reason:
+      `the Hedera network rejected the transfer with ${status}` +
+      (cause ? ` — ${cause}` : "") +
+      (transactionId ? ` (transaction ${transactionId})` : ""),
+  });
+}
+
+/** Wraps a method's `verify` so a raw throw never reaches the buyer as a bare 500. */
+function withNamedFailures(method: Method.AnyServer): Method.AnyServer {
+  const verify = (method as { verify?: (parameters: unknown) => Promise<unknown> }).verify;
+  if (typeof verify !== "function") return method;
+  return {
+    ...method,
+    verify: async (parameters: unknown) => {
+      try {
+        return await verify(parameters);
+      } catch (error) {
+        throw asPaymentError(error);
+      }
+    },
+  } as Method.AnyServer;
+}
+
+/**
  * Builds the two charge methods for a given realm. `hedera.charge`'s `serverId` is
  * fingerprinted into the attribution memo and must equal the challenge realm (see
  * `MPP_REALM` above), so the realm cannot be fixed at module load — it has to be rebuilt per
@@ -165,18 +230,20 @@ const STRIPE_DEMO_SECRET_KEY = "sk_test_demo000000000000000000000000000000000000
  */
 function buildMethods(realm: string): Method.AnyServer[] {
   const methods: Method.AnyServer[] = [
-    hedera.charge({
-      serverId: realm,
-      testnet: HEDERA_NETWORK === "testnet",
-      mirrorNodeUrl: MIRROR_NODE_URL,
-      maxRetries: MIRROR_NODE_MAX_RETRIES,
-      retryDelay: MIRROR_NODE_RETRY_DELAY_MS,
-      // Pull mode: the buyer signs the transfer in the browser and the operator submits it,
-      // so the page never needs gRPC-web. Absent these, only push-mode credentials (a
-      // transaction id the buyer already broadcast) can be verified.
-      operatorId: process.env.HEDERA_OPERATOR_ID,
-      operatorKey: process.env.HEDERA_OPERATOR_KEY,
-    }),
+    withNamedFailures(
+      hedera.charge({
+        serverId: realm,
+        testnet: HEDERA_NETWORK === "testnet",
+        mirrorNodeUrl: MIRROR_NODE_URL,
+        maxRetries: MIRROR_NODE_MAX_RETRIES,
+        retryDelay: MIRROR_NODE_RETRY_DELAY_MS,
+        // Pull mode: the buyer signs the transfer in the browser and the operator submits it,
+        // so the page never needs gRPC-web. Absent these, only push-mode credentials (a
+        // transaction id the buyer already broadcast) can be verified.
+        operatorId: process.env.HEDERA_OPERATOR_ID,
+        operatorKey: process.env.HEDERA_OPERATOR_KEY,
+      }),
+    ),
   ];
 
   methods.push(

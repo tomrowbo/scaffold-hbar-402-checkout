@@ -64,9 +64,27 @@ if (have === null || have < amount) {
   const f = await fetch("http://localhost:3000/api/testnet/fund", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ accountId: payer, associateTransaction: associate }),
+    // Fund for *this* charge. Without an amount the faucet has to assume the priciest item
+    // in the catalogue, which fails on an operator that could cover this purchase easily.
+    body: JSON.stringify({ accountId: payer, amount: amtStr, associateTransaction: associate }),
   });
-  console.log("5. fund:", f.status, await f.text());
+  const fundBody = await f.text();
+  console.log("5. fund:", f.status, fundBody);
+  // The buyer has nothing to spend, so a failed top-up is fatal. Signing and submitting
+  // anyway buries the real error under a settlement failure three steps later.
+  if (!f.ok) {
+    let detail = fundBody;
+    try {
+      const parsed = JSON.parse(fundBody);
+      detail = parsed.detail ?? parsed.error ?? fundBody;
+    } catch {
+      // Not JSON — print what the server sent.
+    }
+    console.error(`\n   Could not fund the buyer, and it holds ${String(bal(account, tokenId) ?? 0n)} of ${tokenId}.`);
+    console.error(`   ${detail}`);
+    client.close();
+    process.exit(1);
+  }
   account = await look(payer);
   console.log("   buyer usdc now:", String(bal(account, tokenId)));
 }

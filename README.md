@@ -27,9 +27,19 @@ Stripe keys gets a live card path and honest demo stubs everywhere else.
 
 ## Create a project
 
+**Prerequisites:** Node.js ≥ 20.18.3, Git, and **Yarn 3.2.3** (the repo pins it in
+`.yarnrc.yml`, so `corepack enable` is enough — you do not install it yourself).
+
 ```bash
 npm create scaffold-hbar@latest -- --template mpp-checkout
 ```
+
+`npm create` here runs the *scaffolder*
+([`create-scaffold-hbar`](https://github.com/hedera-dev/create-scaffold-hbar)), which fetches
+this template into a new directory. It is not the package manager: once that directory
+exists the project is **Yarn-only**, and `npm install` or `pnpm install` will not produce a
+working tree. If you already have the template checked out, skip this step and start at
+`yarn install` below.
 
 ## Run it with no credentials
 
@@ -38,15 +48,30 @@ yarn install
 yarn next:dev    # http://localhost:3000
 ```
 
-Two things to expect on a first run, neither of them a problem:
+Three things to expect on a first run, none of them a problem:
 
-- `yarn install` ends with `YN0009: sharp@npm:0.34.5 couldn't be built successfully`. `sharp`
-  is Next.js's optional image-optimisation dependency; this template ships local SVGs and
-  never calls it. It is the loudest line in the install output and it means nothing here —
-  the build and every page work without it.
+- **`yarn install` ends in about two dozen warnings** — 22 peer-dependency warnings
+  (`YN0002`, `YN0060`) and then `YN0009: sharp@npm:0.34.5 couldn't be built successfully`.
+  Several of the peer warnings name the payment library itself and look alarming:
+
+  ```
+  ➤ YN0060: │ @sh/nextjs@workspace:packages/nextjs provides viem (p978cc) with version 2.39.0, which doesn't satisfy what mppx requests
+  ➤ YN0060: │ @sh/nextjs@workspace:packages/nextjs provides next (pc6373) with version 15.5.12, which doesn't satisfy what mppx requests
+  ➤ YN0060: │ @sh/nextjs@workspace:packages/nextjs provides @hiero-ledger/sdk (p2df0b) with version 2.80.0, which doesn't satisfy what @hashgraph/hedera-wallet-connect requests
+  ```
+
+  They mean the workspace resolves one version of each shared dependency for everything that
+  asks for it, and `mppx` and `@hashgraph/hedera-wallet-connect` declare ranges narrower than
+  the versions wagmi and Next.js pin here. Nothing is missing and nothing is broken — both
+  on-chain rails settle against exactly these versions, and the walkthrough below proves it
+  on the Mirror Node. `sharp` is Next.js's optional image-optimisation dependency; this
+  template ships local SVGs and never calls it.
 - The dev server prints `Ready in ~2.5s` and *then* compiles the first page you open, which
-  takes about **30 seconds** (`✓ Compiled / in 30.4s (11154 modules)`). The first `/checkout`
-  costs another 10–15s. It looks like a hang. It is not; subsequent loads are instant.
+  takes about **30 seconds** (`✓ Compiled / in 30.4s (11154 modules)`).
+- **Every route is slow on its first visit** — `/`, `/checkout` *and* `/receipt/[id]`, 10–30s
+  each — and while a route compiles the browser shows a white page with a small spinner in
+  the middle of it. It reads as a broken app rather than a slow one. It is not; the page
+  appears when compilation finishes and every later load is instant.
 
 That is the whole setup. Open <http://localhost:3000>, pick an item, and walk through
 checkout. `/`, `/checkout` and `/receipt/[id]` all render; every payment control shows a
@@ -167,16 +192,59 @@ use `@`.
 > Testnet USDC in this template is **`0.0.5449`**. `0.0.429274` is a *different* testnet
 > token with the same name, symbol and decimals — charges against it cannot be verified here.
 
+### Getting testnet USDC (`0.0.5449`)
+
+Read this before the walkthrough. Both on-chain rails move testnet USDC `0.0.5449`, and the
+operator has to be holding some before anything settles — `/api/testnet/fund` moves the
+operator's own balance to a test buyer, it is not a mint. The Hedera Portal gives you HBAR,
+not USDC, and this is the part that costs people an afternoon: **no faucet hands out
+`0.0.5449` directly.**
+
+What does work, in two steps:
+
+1. **Get testnet HBAR** from the [Hedera Portal faucet](https://portal.hedera.com/faucet) —
+   100 HBAR per day against your testnet account id.
+2. **Swap it for `0.0.5449`** on SaucerSwap's testnet deployment,
+   <https://testnet.saucerswap.finance>. Connect the operator account, let it associate
+   `0.0.5449`, and swap HBAR for USDC. Its USDC/HBAR pool (contract `0.0.2661044`) is the
+   deepest market for this token on testnet and is still actively traded — check the reserves
+   yourself rather than taking this README's word for it:
+
+   ```console
+   $ curl -s https://test-api.saucerswap.finance/pools/3 \
+     | jq '{a: .tokenA.id, reserveA: .tokenReserveA, b: .tokenB.id, reserveB: .tokenReserveB}'
+   {
+     "a": "0.0.5449",
+     "reserveA": "307599305282",
+     "b": "0.0.15058",
+     "reserveB": "13486064572365"
+   }
+   ```
+
+   (`0.0.15058` is WHBAR, 8 decimals. Testnet pricing is arbitrary and bears no relation to
+   the real HBAR/USDC rate — that is fine, it is play money either way.)
+
+**Not Circle's faucet.** <https://faucet.circle.com> does list Hedera Testnet and does hand
+out 20 USDC, but the token it sends is **`0.0.429274`**, the other testnet USDC. `mppx-hedera`
+pins `0.0.5449` for chain 296 and checks the Mirror Node for transfers of *that* token, so
+USDC from Circle's faucet cannot settle a charge here, and no amount of configuration will
+make it. If someone already holds `0.0.5449`, a plain transfer works too.
+
 ## Your first payment (Hedera testnet)
 
 Three roles are in play, and the first-run confusion is almost always about which account is
 which:
 
-| Role | What it does | Where it comes from |
-|---|---|---|
-| **Operator** | The server's own account. Submits pull-mode transfers and funds test buyers. It never becomes the buyer. | `HEDERA_OPERATOR_ID` / `HEDERA_OPERATOR_KEY` — [Hedera Portal](https://portal.hedera.com/) |
-| **Recipient (merchant)** | The account the USDC lands in. Advertised as `recipient` in the challenge. | `HEDERA_RECIPIENT_ID`; defaults to the operator |
-| **Buyer** | Signs the transfer. A connected wallet, or a throwaway *burner* key. | You create one — step 2 |
+| Role | What it does | Needs | Where it comes from |
+|---|---|---|---|
+| **Operator** | The server's own account. Submits pull-mode transfers and funds test buyers. It never becomes the buyer. | **HBAR *and* USDC** — it pays out every top-up | `HEDERA_OPERATOR_ID` / `HEDERA_OPERATOR_KEY` — [Hedera Portal](https://portal.hedera.com/) |
+| **Recipient (merchant)** | The account the USDC lands in. Advertised as `recipient` in the challenge. | Nothing; it only receives | `HEDERA_RECIPIENT_ID`; defaults to the operator |
+| **Buyer** | Signs the transfer. A throwaway *burner* key, or a connected wallet. | HBAR for fees and USDC for the purchase — both handed down by the operator | You create one — step 2 |
+
+The **operator** is the only account with funding you have to go and get: its HBAR from the
+[Portal faucet](https://portal.hedera.com/faucet), its USDC from
+[Getting testnet USDC](#getting-testnet-usdc-005449) above. Everything the buyer holds comes
+from the operator, via `yarn make:burner` and `/api/testnet/fund`.
 
 The Portal gives you exactly **one** testnet account, so the instinct is to make it all three.
 Operator and recipient can share an account. The buyer cannot join them: a transfer from an
@@ -207,6 +275,24 @@ $ curl -sI -H 'Accept: application/json' 'http://localhost:3000/api/pay?product=
 x-mpp-demo-mode: stripe
 ```
 
+Check the operator's USDC while you are here. It funds every test buyer, and an operator
+holding none is the one thing that stops this walkthrough dead — far better to learn it now
+than from a `502` at step 3:
+
+```console
+$ curl -s 'https://testnet.mirrornode.hedera.com/api/v1/accounts/0.0.8569027/tokens?token.id=0.0.5449' \
+  | jq '.tokens[0] | {token_id, balance}'
+{
+  "token_id": "0.0.5449",
+  "balance": 14260022
+}
+```
+
+Balances are base units at 6 decimals, so `14260022` is **14.26 USDC** — comfortably more
+than the $12.00 mug this walkthrough buys. `null`, or an empty `tokens` array, means the
+operator has never held the token at all; [Getting testnet USDC](#getting-testnet-usdc-005449)
+fixes either case.
+
 **2. Make a burner buyer.** A burner is an ECDSA key whose Hedera account you do not care
 about. Generating the key is the easy part; the key has no account until HBAR lands on its
 EVM alias, and the buyer needs HBAR of its own to pay transaction fees. `yarn make:burner`
@@ -228,6 +314,13 @@ Or in the browser, from the DevTools console on http://localhost:3000:
 
 It still holds no USDC. That is what `/api/testnet/fund` is for.
 
+The same key is printed twice there in two different shapes — bare hex on the `e2e:charge`
+line, `0x`-prefixed on the `localStorage` line — and `HEDERA_OPERATOR_KEY` in the block above
+is `0x`-prefixed as well. **All three accept both forms.** `e2e:charge`, `e2e:x402` and the
+browser each strip a leading `0x` before parsing, and `parseOperatorKey` additionally takes
+DER and ED25519. The shapes differ only because that is how each line is conventionally
+written; copy whichever line you need, whole.
+
 **3a. Pay from the command line.** With the server running, `yarn e2e:charge` runs the whole
 protocol — challenge, faucet top-up, signed transfer, retry with the credential, receipt:
 
@@ -244,7 +337,7 @@ $ yarn e2e:charge c97af255da1f636cbaf42b0cafca93f492f04cc9ed117b1c1678a9cfe75807
 }
 3. memo: 0xef1ed71201799e61a18946a19f71c4000000000000000000001ac6d4282fc898
 4. buyer: 0.0.10761282 usdc: null
-5. fund: 200 {"funded":true,"accountId":"0.0.10761282","tokenId":"0.0.5449","amount":"64000000"}
+5. fund: 200 {"funded":true,"accountId":"0.0.10761282","tokenId":"0.0.5449","amount":"12000000","needed":"12000000"}
    buyer usdc now: null
 6. signed transfer, submitting credential (pull mode)…
 7. settled status: 200
@@ -255,8 +348,21 @@ $ yarn e2e:charge c97af255da1f636cbaf42b0cafca93f492f04cc9ed117b1c1678a9cfe75807
           "hashscanUrl":"https://hashscan.io/testnet/transaction/0.0.10761282@1790605656.212129734"}
 ```
 
-`buyer usdc now: null` in step 5 is the Mirror Node still catching up, not a failed top-up —
-the transfer in step 6 goes through regardless. Confirm the settlement yourself:
+**On step 5, read the status before the balance.** When it says `fund: 200`, a following
+`buyer usdc now: null` is the Mirror Node still catching up, not a failed top-up — the
+transfer in step 6 goes through regardless. That is the only case this reassurance covers.
+Any other status is a real failure with a real cause, and the script stops there and prints
+it rather than signing a transfer the buyer cannot pay for:
+
+```console
+5. fund: 502 {"error":"operator_underfunded","detail":"Operator 0.0.8569027 holds 14.260022 USDC (token 0.0.5449) on testnet, which is not enough to send the buyer the 64.000000 this top-up needs. Get testnet HBAR from https://portal.hedera.com/faucet and swap it for token 0.0.5449 on https://testnet.saucerswap.finance ..."}
+
+   Could not fund the buyer, and it holds 0 of 0.0.5449.
+   Operator 0.0.8569027 holds 14.260022 USDC (token 0.0.5449) on testnet, which is not enough
+   to send the buyer the 64.000000 this top-up needs. …
+```
+
+Confirm the settlement yourself:
 
 ```console
 $ curl -s 'https://testnet.mirrornode.hedera.com/api/v1/transactions/0.0.10761282-1790605656-212129734' \
@@ -287,9 +393,13 @@ hand:
 
 ```console
 $ curl -s -X POST -H 'Content-Type: application/json' \
-    -d '{"accountId":"0.0.10761282"}' http://localhost:3000/api/testnet/fund
-{"funded":true,"accountId":"0.0.10761282","tokenId":"0.0.5449","amount":"64000000"}
+    -d '{"accountId":"0.0.10761282","product":"hashgraph-mug"}' http://localhost:3000/api/testnet/fund
+{"funded":true,"accountId":"0.0.10761282","tokenId":"0.0.5449","amount":"12000000","needed":"12000000"}
 ```
+
+Say which item you are funding for — `product`, or `amount` in base units. Without it the
+faucet has to assume the priciest thing in the catalogue; see
+[`/api/testnet/fund`](#apitestnetfund) below.
 
 A burner that has never held USDC also needs the token association, which a bare `curl` does
 not do — the browser and `yarn e2e:charge` both sign that association and pass it as
@@ -302,20 +412,45 @@ before it can hold it, so a fresh buyer has nothing to spend and no way to recei
 
 ```
 POST /api/testnet/fund
-{ "accountId": "0.0.10761282", "associateTransaction": "<base64, optional>" }
+{ "accountId": "0.0.10761282", "amount": "12000000", "associateTransaction": "<base64, optional>" }
 ```
 
 - `accountId` — the buyer, as `0.0.10761282`. It must not be the operator (`400 self_funding`).
+- `amount` — USDC **base units** the buyer is about to spend, as digits in a string
+  (`"12000000"` is 12.00 USDC). Capped at the priciest item in the catalogue.
+- `product` — a catalogue id (`"hashgraph-mug"`) instead of `amount`, if you would rather the
+  route do the pricing.
 - `associateTransaction` — a base64 `TokenAssociateTransaction` **signed by the buyer**, which
   the operator submits on their behalf. Only needed when the buyer has never held USDC and has
   no automatic association slots; anything other than an association is rejected, so this is
   not a general transaction relay. `yarn e2e:charge` builds it for you.
 
-It tops the buyer up to the priciest item in the catalogue (64.00 USDC), so one call covers
-any purchase, and it no-ops with `{"funded":false,"reason":"sufficient_balance"}` if the buyer
-is already funded. `503` if the operator is not configured, `403` off testnet. The operator
-must itself hold enough testnet USDC to pay out — the faucet is a convenience over the
-operator's balance, not a mint.
+It tops the buyer up to whatever was asked for, sending only the shortfall, and no-ops with
+`{"funded":false,"reason":"sufficient_balance"}` if the buyer already holds enough. `503` if
+the operator is not configured, `403` off testnet.
+
+**Say what is being bought.** With neither `amount` nor `product` the route has to assume the
+priciest item in the catalogue (64.00 USDC), because it has nothing else to go on — and an
+operator that could comfortably cover a $12.00 mug is then refused for want of 64. Both
+in-tree callers (`lib/hederaBuyer.ts` and `scripts/e2e-charge.mjs`) pass the charge amount; a
+hand-written `curl` should too.
+
+The operator must itself hold enough testnet USDC to pay out — the faucet is a convenience
+over the operator's balance, not a mint. When it does not, the route says so by name:
+
+```console
+$ curl -s -X POST -H 'Content-Type: application/json' \
+    -d '{"accountId":"0.0.10775466"}' http://localhost:3000/api/testnet/fund
+{"error":"operator_underfunded","detail":"Operator 0.0.8569027 holds 14.260022 USDC (token 0.0.5449)
+ on testnet, which is not enough to send the buyer the 64.000000 this top-up needs. Get testnet HBAR
+ from https://portal.hedera.com/faucet and swap it for token 0.0.5449 on
+ https://testnet.saucerswap.finance (the USDC/HBAR pool). Circle's faucet at
+ https://faucet.circle.com dispenses 0.0.429274 instead, a different testnet USDC this template
+ cannot verify. If the operator can cover the item being bought but not this top-up, post
+ \"product\" or \"amount\" so the faucet moves only what that purchase costs."}
+```
+
+(Wrapped here for reading; it is one line on the wire.)
 
 ## Rail: Card (Stripe)
 
@@ -528,10 +663,11 @@ packages/nextjs/
     e2e-x402.mjs          The same purchase over x402, via the official @x402/fetch client
 ```
 
-Prerequisites: Node.js ≥ 20.18.3, Git, Yarn (3.2.3 — the template is Yarn-only; `npm install`
-and `pnpm install` will not produce a working tree). Wallet connection additionally uses
-`NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID` from [Reown / WalletConnect Cloud](https://cloud.reown.com).
-`packages/nextjs/.env.example` lists every variable.
+Prerequisites — Node.js ≥ 20.18.3, Git, Yarn 3.2.3 — are at the top under
+[Create a project](#create-a-project), where you need them rather than here. Wallet connection
+additionally uses `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID` from
+[Reown / WalletConnect Cloud](https://cloud.reown.com); `packages/nextjs/.env.example` lists
+every variable the app reads.
 
 ## Further reading
 
