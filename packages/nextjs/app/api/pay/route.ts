@@ -177,6 +177,15 @@ async function handlePayment(request: Request): Promise<Response> {
     console.error("Settled a charge but could not resolve its order", error);
   }
 
+  // A browser got here through mppx's card form, which replays the request from a service
+  // worker and reloads the page — so whatever this returns is what the buyer ends up looking
+  // at. Send them to the storefront's own receipt rather than leaving them on raw JSON.
+  // Agents (`Accept: application/json`, or no Accept at all) still get the JSON body.
+  const wantsHtml = request.headers.get("Accept")?.includes("text/html") ?? false;
+  if (wantsHtml && orderId) {
+    return result.withReceipt(new Response(null, { status: 303, headers: { Location: `/receipt/${orderId}` } }));
+  }
+
   return result.withReceipt(
     Response.json({
       orderId,

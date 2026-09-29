@@ -463,10 +463,34 @@ challenge. The form mints a Shared Payment Token through `/api/pay/token` and re
 # packages/nextjs/.env
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_PUBLISHABLE_KEY=pk_test_...
-STRIPE_NETWORK_ID=...            # your Stripe MPP network id
+STRIPE_NETWORK_ID=profile_test_...   # your Stripe profile id
 ```
 
 All three are required — `hasStripe()` in `packages/nextjs/lib/demo.ts` is an AND.
+
+### Where `STRIPE_NETWORK_ID` comes from
+
+It is a **Stripe profile** id, and the profile is a one-time Dashboard step that nothing
+else in this template can do for you. Go to
+[dashboard.stripe.com/profiles](https://dashboard.stripe.com/profiles), click **Get
+started**, and give it a display name and a handle. Create it in the same sandbox your
+`sk_test_` key belongs to — a live-mode profile issues a `profile_...` id that a test key
+cannot use. Then read the id back:
+
+```console
+$ curl -s https://api.stripe.com/v2/network/business_profiles/me \
+    -u sk_test_...: -H 'Stripe-Version: 2026-07-29.preview'
+{"id":"profile_test_...", ...}
+```
+
+Before the profile exists that call answers `404 {"code":"not_found","message":"Stripe
+business profile not found."}`, which is the error to expect if you skip this step.
+
+A caveat worth knowing before you spend time on it: **in a sandbox the id is advertised but
+never enforced.** It travels in the 402 so an agent wallet knows who to mint a token for, but
+the test-mode SPT helper grants to whichever account the secret key belongs to and ignores it.
+So a sandbox payment settles with any non-empty value. Only a real agent wallet — Onelink, in
+live mode — needs the id to be the true one.
 
 **Verify it.** With Stripe unconfigured the token endpoint refuses in a readable way:
 
@@ -475,10 +499,30 @@ $ curl -s -X POST -H 'Content-Type: application/json' -d '{}' http://localhost:3
 {"error":"demo_mode","detail":"Set STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY and STRIPE_NETWORK_ID to enable card payments."}
 ```
 
-Configure the three variables, restart, and check two things: `x-mpp-demo-mode` drops
-`stripe`, and `curl -H 'Accept: text/html' 'http://localhost:3000/api/pay?product=hbar-tee'`
-returns a Stripe Elements card form instead of the inert demo panel. Pay with Stripe's
-`4242 4242 4242 4242` test card and `/receipt/[id]` renders the settled order.
+Configure the three variables and restart. `yarn e2e:stripe` then walks the whole rail
+headlessly — it reads the `stripe` challenge, mints a Shared Payment Token against Stripe's
+`pm_card_visa` test card, and replays the 402 with it:
+
+```console
+$ yarn e2e:stripe hbar-tee
+1. challenge status: 402
+2. parsed: { id: '1SJ_2g3…', amount: '2400', currency: 'usd', networkId: 'profile_test_…' }
+3. minting SPT for pm_card_visa …
+4. spt: spt_1UL1AeQud7O6ztzYMx5VpkI7
+5. retrying with the credential…
+6. settled status: 200
+   payment-receipt: eyJtZXRob2QiOiJzdHJpcGUiLCJzdGF0dXMiOiJzdWNjZXNzIiw…
+
+✓ card payment settled: pi_3UL1AeQud7O6ztzY0IgjCuWS
+```
+
+That `pi_` id is the check that matters — look it up under **Payments** in the Dashboard, or
+`curl https://api.stripe.com/v1/payment_intents/pi_... -u sk_test_...:`. It carries
+`metadata.mpp_challenge_id` tying it back to the challenge the credential was issued for.
+
+In the browser, **Pay by card** on `/checkout` goes to `/api/pay`, where mppx serves a Stripe
+Elements form. Pay with `4242 4242 4242 4242`, any future expiry, any CVC; the form replays
+the request through a service worker and the route redirects to `/receipt/[id]`.
 
 The card offer is advertised in the 402 **even when Stripe is unconfigured** — deliberately,
 so that a developer running this template with no keys still sees the two-rail challenge that
@@ -620,6 +664,7 @@ transfer, retry with the credential, read the receipt.
 | `yarn make:burner [hbar]` | Create and fund a testnet burner buyer; prints its account id and private key. Needs `HEDERA_OPERATOR_*` set |
 | `yarn e2e:charge <burner-key> [product]` | End-to-end charge against a running server: 402 → faucet → sign → retry → receipt. Needs `HEDERA_OPERATOR_*` set and `yarn next:dev` (or `yarn next:serve`) running |
 | `yarn e2e:x402 <buyer-key> [product]` | The same purchase over x402, driven by the official `@x402/fetch` client: 402 → faucet → sign → `PAYMENT-SIGNATURE` → facilitator settles → Mirror Node check. Needs `HEDERA_OPERATOR_*` and `AX402_FACILITATOR_URL` set, and a server running |
+| `yarn e2e:stripe [product]` | The same purchase on the card rail: 402 → SPT minted against Stripe's `pm_card_visa` → retry → PaymentIntent. Needs the three `STRIPE_*` variables set (`sk_test_` only) and a server running |
 
 There is deliberately **no `yarn next:start`**. It used to alias `next dev`, so anyone reaching
 for the obvious name after `yarn next:build` silently got a development server and smoke-tested
@@ -661,6 +706,7 @@ packages/nextjs/
     make-burner.mjs       Creates and funds a throwaway testnet buyer
     e2e-charge.mjs        Exercises the pull-mode Hedera payment path end to end
     e2e-x402.mjs          The same purchase over x402, via the official @x402/fetch client
+    e2e-stripe.mjs        The same purchase on the card rail, settled by a real PaymentIntent
 ```
 
 Prerequisites — Node.js ≥ 20.18.3, Git, Yarn 3.2.3 — are at the top under

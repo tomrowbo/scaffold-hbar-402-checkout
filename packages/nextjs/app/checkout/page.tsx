@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { CardPayButton } from "~~/components/CardPayButton";
 import { HederaPayButton } from "~~/components/HederaPayButton";
 import { PaymentOption } from "~~/components/PaymentOption";
 import { X402PayButton } from "~~/components/X402PayButton";
@@ -21,12 +22,15 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
   // is reported by the button when it reads the 402, not by greying the card out at render.
   const x402Enabled = hasX402();
 
+  const cardEnabled = hasStripe();
+
   const paymentOptions = [
     {
       label: "Card",
       description: "Stripe settles the card and answers the 402 challenge on the buyer's behalf.",
       envVars: ["STRIPE_SECRET_KEY", "STRIPE_PUBLISHABLE_KEY", "STRIPE_NETWORK_ID"],
-      enabled: hasStripe(),
+      enabled: cardEnabled,
+      action: <CardPayButton productId={product.id} priceUsd={product.priceUsd} enabled={cardEnabled} />,
     },
     {
       label: "Hedera",

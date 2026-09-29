@@ -47,8 +47,15 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
             : `${order.amountUsd || product.priceUsd} USDC (${order.tokenId})`,
         },
         { label: "Payment rail", value: rail },
-        { label: "Paid by", value: order.payer?.split(":").pop() ?? "unknown" },
-        { label: "Paid to", value: order.recipient },
+        // Payer and recipient are on-chain identities. A card settles inside Stripe against a
+        // token that deliberately hides the card, and there is no account id on either side —
+        // so omit both rows rather than print "unknown" next to an empty one.
+        ...(isCard
+          ? []
+          : [
+              { label: "Paid by", value: order.payer?.split(":").pop() ?? "unknown" },
+              { label: "Paid to", value: order.recipient },
+            ]),
         { label: "Transaction", value: order.transactionId },
         { label: "Settled", value: order.settledAt },
       ]

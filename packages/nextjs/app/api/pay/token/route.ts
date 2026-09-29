@@ -6,6 +6,10 @@
  * SPTs are in Stripe private preview and not in the SDK's typed surface, so this goes
  * through `rawRequest` with a preview API version — the same two endpoints the mppx CLI uses:
  * the test-helper grant for `sk_test_` keys, the issued-tokens API for live keys.
+ *
+ * The two endpoints do not take the same parameters. `seller_details` is live-mode only;
+ * the test helper grants to whichever account the secret key belongs to. Verified against
+ * both `2026-04-22.preview` and `2026-07-29.preview`.
  */
 import { hasStripe } from "~~/lib/demo";
 import { stripeClient, stripeLivemode } from "~~/lib/mppx";
@@ -74,8 +78,10 @@ export async function POST(request: Request): Promise<Response> {
   const params: Record<string, unknown> = {
     payment_method: paymentMethod,
     usage_limits: { currency, max_amount: amount, expires_at: expiresAt },
-    // Live issuance grants to a business profile (`profile_...`); the test helper takes a network id.
-    seller_details: livemode ? { network_business_profile: networkId } : { network_id: networkId },
+    // Live issuance must name the business profile the token is granted to. The test helper
+    // rejects `seller_details` outright (`parameter_unknown`) and grants to the calling
+    // account implicitly, so sending it in test mode 502s every card payment.
+    ...(livemode && { seller_details: { network_business_profile: networkId } }),
   };
   if (metadata && typeof metadata === "object" && !Array.isArray(metadata)) {
     params.metadata = Object.fromEntries(

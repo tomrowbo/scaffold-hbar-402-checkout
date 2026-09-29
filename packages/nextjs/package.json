@@ -7,6 +7,7 @@
     "check-types": "tsc --noEmit --incremental",
     "dev": "next dev",
     "e2e:charge": "node scripts/e2e-charge.mjs",
+    "e2e:stripe": "node scripts/e2e-stripe.mjs",
     "e2e:x402": "node scripts/e2e-x402.mjs",
     "format": "prettier --write . '!(node_modules|.next|contracts)/**/*'",
     "lint": "next lint",
