@@ -221,12 +221,31 @@ type MppxInstance = ReturnType<typeof Mppx.create>;
 const mppxInstances = new Map<string, MppxInstance>();
 const MAX_MPPX_INSTANCES = 64;
 
+/**
+ * Callbacks run against every instance, present and future — how `attachOrderRecorder()` in
+ * `lib/orders.ts` gets its `onPaymentSuccess` listener onto all of them.
+ *
+ * mppx listeners are per-instance, and there is one instance per realm, so a listener
+ * registered against the default instance alone would silently stop recording orders the
+ * moment the app was served from anything other than `MPP_REALM` — a tunnel, a preview
+ * deployment, a LAN IP during a demo, or just a second `next dev` on port 3001.
+ */
+type MppxInstanceListener = (instance: MppxInstance) => void;
+const instanceListeners: MppxInstanceListener[] = [];
+
+/** Registers `listener` against every mppx instance this process builds, including existing ones. */
+export function onMppxInstance(listener: MppxInstanceListener): void {
+  instanceListeners.push(listener);
+  for (const instance of mppxInstances.values()) listener(instance);
+}
+
 function mppxForRealm(realm: string): MppxInstance {
   let instance = mppxInstances.get(realm);
   if (!instance) {
     if (mppxInstances.size >= MAX_MPPX_INSTANCES) mppxInstances.clear();
     instance = Mppx.create({ methods: buildMethods(realm), realm, secretKey: mppSecretKey() });
     mppxInstances.set(realm, instance);
+    for (const listener of instanceListeners) listener(instance);
   }
   return instance;
 }

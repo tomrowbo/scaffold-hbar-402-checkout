@@ -18,7 +18,7 @@
  */
 import type { DiscoveryHandler } from "mppx/discovery";
 import { PaymentInfo, generate } from "mppx/discovery";
-import { USDC_DECIMALS, USDC_TOKEN_ID, chargeRecipient, chargeHandlerForDiscovery, mppxForRequest } from "~~/lib/mppx";
+import { USDC_DECIMALS, USDC_TOKEN_ID, chargeHandlerForDiscovery, chargeRecipient, mppxForRequest } from "~~/lib/mppx";
 import { products } from "~~/lib/products";
 import { X402_NETWORK, X402_SCHEME, toBaseUnits } from "~~/lib/x402";
 

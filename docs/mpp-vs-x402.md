@@ -280,13 +280,26 @@ Precision here, because a comparison that overstates its own implementation is w
   buyer in that run was the official `@x402/fetch` client, not this repository's code —
   `yarn e2e:x402 <buyer-key>` is the script.
 
-  What is **not** wired: x402 settlements are not recorded in `lib/orders.ts` and so do not
-  appear on `/receipt/[id]`. That store is keyed by MPP challenge id; an x402 payment reports
-  through its own `PAYMENT-RESPONSE` header and the 200 body instead. The `/checkout` page's x402
-  card has no `action`, so its "Pay with x402" button is inert even when the rail is live — a
-  browser-side x402 payment would need a Hedera key in the page, which is the wallet
-  integration MPP's rail has (`HederaPayButton`) and this one does not. x402 is bought from an
-  agent or a script here, not from the storefront.
+  It is also bought from the storefront. The `/checkout` page's x402 card carries an
+  `X402PayButton`, the twin of `HederaPayButton`: it reads the 402, signs the transfer in the
+  browser with the burner key at `localStorage['burnerWallet.pk']`, and settles through
+  `@x402/fetch` + `@x402/hedera` — the same client stack `yarn e2e:x402` drives from Node,
+  running in the page. Transaction `0.0.9839454@1790678082.125912158` is one that button
+  settled: 12 USDC of `0.0.5449` from `0.0.10775007` to `0.0.8569027`
+  ([HashScan](https://hashscan.io/testnet/transaction/0.0.9839454@1790678082.125912158)).
+
+  A settlement is recorded too. `recordX402Order` in `lib/orders.ts` writes it to the same
+  store MPP charges land in and mints an `x402_…` order reference — x402 has no challenge id
+  to key on — which `/api/x402` returns as `orderId`/`receiptUrl` in the 200 body alongside the
+  protocol's own `PAYMENT-RESPONSE` header. `/receipt/[id]` renders it exactly as it renders an
+  MPP charge, naming the rail as x402 and linking the transaction on HashScan.
+
+  What is **partial**: the x402 button has no connected-wallet path, where `HederaPayButton`
+  does. x402's `exact` scheme on Hedera needs a *partially signed* transaction whose
+  transaction id names the facilitator's sponsored fee payer, and WalletConnect's Hedera
+  methods sign and execute rather than return signed bytes — so from a page, only an injected
+  burner key can pay this rail. The order store is also still in-memory and per-process, for
+  both protocols.
 
   One thing a buyer has to opt into, and it is the client's policy rather than this server's:
   `@x402/hedera` treats `0.0.429274` as testnet USDC, while this store charges in `0.0.5449`

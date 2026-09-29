@@ -16,7 +16,8 @@ export const dynamic = "force-dynamic";
 export default async function ReceiptPage({ params }: ReceiptPageProps) {
   const { id } = await params;
 
-  // A settled order is keyed by the MPP challenge id that paid for it.
+  // A settled order is keyed by the reference that paid for it: an MPP challenge id, or
+  // the `x402_…` reference `recordX402Order` minted for an x402 settlement.
   const order = findOrder(id);
   // An unrecognised reference renders a demo receipt rather than a 404, so a judge
   // can open /receipt/anything and still see the finished flow.
@@ -24,6 +25,16 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
   const product = matched ?? products[0];
   const isDemo = !order && !matched;
   const isCard = order?.method === "stripe";
+  const isX402 = order?.method === "x402";
+
+  // One line per rail, because the protocol that carried the payment is the whole point of
+  // this template — an x402 settlement and an MPP Hedera charge move the same token between
+  // the same accounts and would otherwise be indistinguishable on the receipt.
+  const rail = isCard
+    ? "Card — Stripe charge (MPP)"
+    : isX402
+      ? "x402 — exact scheme on hedera:testnet (facilitator-settled)"
+      : "Hedera — native USDC charge (MPP)";
 
   const rows = order
     ? [
@@ -35,7 +46,7 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
             ? `$${order.amountUsd || product.priceUsd} USD`
             : `${order.amountUsd || product.priceUsd} USDC (${order.tokenId})`,
         },
-        { label: "Payment rail", value: isCard ? "Card — Stripe charge (MPP)" : "Hedera — native USDC charge (MPP)" },
+        { label: "Payment rail", value: rail },
         { label: "Paid by", value: order.payer?.split(":").pop() ?? "unknown" },
         { label: "Paid to", value: order.recipient },
         { label: "Transaction", value: order.transactionId },
@@ -91,7 +102,9 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
                   {order
                     ? isCard
                       ? "Paid by card via Stripe"
-                      : `Settled on Hedera ${HEDERA_NETWORK}`
+                      : isX402
+                        ? `Settled on Hedera ${HEDERA_NETWORK} via x402`
+                        : `Settled on Hedera ${HEDERA_NETWORK}`
                     : "Paid in full"}
                 </p>
               </div>

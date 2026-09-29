@@ -89,7 +89,14 @@ if (have === null || have < amount) {
     body: JSON.stringify({ accountId: payer, associateTransaction: associate }),
   });
   console.log("4. fund:", funded.status, await funded.text());
-  account = await look(payer);
+  // The Mirror Node lags consensus by a second or two, and both this script's own check and
+  // the facilitator's preflight read the balance from it — so poll rather than read once, or
+  // a freshly funded buyer is refused for `insufficient_balance` it does in fact have.
+  for (let attempt = 0; attempt < 10; attempt++) {
+    account = await look(payer);
+    if ((bal(account, offer.asset) ?? 0n) >= amount) break;
+    await new Promise(resolve => setTimeout(resolve, 2_000));
+  }
   console.log("   buyer usdc now:", String(bal(account, offer.asset)));
 }
 

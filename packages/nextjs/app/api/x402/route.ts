@@ -21,7 +21,8 @@
  * A paid retry carries `PAYMENT-SIGNATURE` (v2's header; `X-PAYMENT` is v1's and is accepted as
  * an alias). The route checks the echoed `accepted` against its own offer, then runs the
  * facilitator's `POST /verify` and `POST /settle`. On success it returns the resource with the
- * settlement in `PAYMENT-RESPONSE` (and `X-PAYMENT-RESPONSE` for older clients).
+ * settlement in `PAYMENT-RESPONSE` (and `X-PAYMENT-RESPONSE` for older clients), and records
+ * the payment in `lib/orders.ts` so it shows up on `/receipt/[id]` beside MPP charges.
  *
  * `demo: true` and `X-MPP-Demo-Mode: x402` mark the challenge whenever `canSettleX402()` is
  * false (no facilitator configured, or it is unreachable or does not list `exact` on
@@ -36,6 +37,7 @@ import {
 } from "@x402/core/http";
 import type { PaymentPayload, PaymentRequired, PaymentRequirements, SettleResponse } from "@x402/core/types";
 import { USDC_DECIMALS, USDC_TOKEN_ID, chargeRecipient, hashscanTransactionUrl } from "~~/lib/mppx";
+import { recordX402Order } from "~~/lib/orders";
 import { Product, findProduct, products } from "~~/lib/products";
 import {
   X402_NETWORK,
@@ -186,9 +188,27 @@ function mismatchedField(accepted: PaymentRequirements | undefined, offered: Pay
   return fields.find(field => accepted[field] !== offered[field]) ?? null;
 }
 
-/** 200 with the purchased resource, and the settlement in the header a client reads it from. */
-function settledResponse(product: Product, settlement: SettleResponse): Response {
+/**
+ * 200 with the purchased resource, and the settlement in the header a client reads it from.
+ *
+ * The settlement is recorded in the shared order store first, so the buyer gets an order
+ * reference back in the body and `/receipt/[id]` can render the payment exactly as it renders
+ * an MPP one. `orderId`/`receiptUrl` are this template's own additions to the resource — the
+ * protocol's own record of the payment is the `PAYMENT-RESPONSE` header, which is unchanged.
+ */
+function settledResponse(product: Product, offered: PaymentRequirements, settlement: SettleResponse): Response {
   const receipt = encodePaymentResponseHeader(settlement);
+  const orderId = settlement.transaction
+    ? recordX402Order({
+        productId: product.id,
+        amountUsd: product.priceUsd,
+        amountBaseUnits: offered.amount,
+        tokenId: offered.asset,
+        recipient: offered.payTo,
+        transactionId: settlement.transaction,
+        payer: settlement.payer,
+      })
+    : null;
   return Response.json(
     {
       product: { id: product.id, name: product.name, priceUsd: product.priceUsd },
@@ -196,6 +216,8 @@ function settledResponse(product: Product, settlement: SettleResponse): Response
       transactionId: settlement.transaction,
       hashscanUrl: settlement.transaction ? hashscanTransactionUrl(settlement.transaction) : null,
       network: settlement.network,
+      orderId,
+      receiptUrl: orderId ? `/receipt/${orderId}` : null,
     },
     {
       headers: {
@@ -281,7 +303,7 @@ async function handlePayment(request: Request): Promise<Response> {
     return challengeResponse(paymentRequired(request, product, extra, reason), false);
   }
 
-  return settledResponse(product, settlement);
+  return settledResponse(product, offered, settlement);
 }
 
 export const GET = handlePayment;

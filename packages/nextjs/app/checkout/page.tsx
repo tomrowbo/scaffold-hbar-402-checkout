@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { HederaPayButton } from "~~/components/HederaPayButton";
 import { PaymentOption } from "~~/components/PaymentOption";
+import { X402PayButton } from "~~/components/X402PayButton";
 import { hasStripe, hasX402 } from "~~/lib/demo";
 import { USDC_TOKEN_ID, canSettle } from "~~/lib/mppx";
 import { findProduct, products } from "~~/lib/products";
@@ -16,6 +17,9 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
   const product = (requestedId ? findProduct(requestedId) : undefined) ?? products[0];
 
   const hederaEnabled = canSettle();
+  // Config-only, like `canSettle()` above: a facilitator that is configured but unreachable
+  // is reported by the button when it reads the 402, not by greying the card out at render.
+  const x402Enabled = hasX402();
 
   const paymentOptions = [
     {
@@ -35,7 +39,8 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
       label: "x402",
       description: "The same purchase routed through an x402 facilitator, for protocol comparison.",
       envVars: ["AX402_FACILITATOR_URL"],
-      enabled: hasX402(),
+      enabled: x402Enabled,
+      action: <X402PayButton productId={product.id} priceUsd={product.priceUsd} enabled={x402Enabled} />,
     },
   ];
 

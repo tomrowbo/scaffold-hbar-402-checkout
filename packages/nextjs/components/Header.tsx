@@ -86,9 +86,6 @@ export const Header = () => {
           </div>
           <div className="flex flex-col">
             <span className="font-bold leading-tight text-base">Hedera Merch</span>
-            <span className="hidden md:block text-[10px] tracking-wider uppercase text-base-content/50 font-medium">
-              One Endpoint, Three Payment Rails
-            </span>
           </div>
         </Link>
         <ul className="hidden lg:flex lg:flex-nowrap menu menu-horizontal px-1 gap-2">

@@ -417,9 +417,14 @@ signer refuses to build a transaction without it, so an offer missing it is unpa
 through the facilitator's `POST /verify` and `POST /settle`; a successful settlement returns
 `200` with the receipt in `PAYMENT-RESPONSE` and `X-PAYMENT-RESPONSE`. `yarn e2e:x402 <buyer-key>`
 drives the whole thing with the official `@x402/fetch` client against a running dev server and
-confirms the transfer on the Mirror Node. Nothing is recorded in `lib/orders.ts` — x402
-settlements do not appear on `/receipt/[id]`, which is MPP's.
-[`docs/mpp-vs-x402.md`](docs/mpp-vs-x402.md) compares the two challenge formats line by line.
+confirms the transfer on the Mirror Node. The same client stack runs in the browser behind
+`/checkout`'s "Pay with x402" button, signing with the burner key at
+`localStorage['burnerWallet.pk']` — there is no connected-wallet path for this rail, because
+x402's `exact` scheme needs signed-but-unsubmitted bytes that WalletConnect's Hedera methods
+do not return. A settlement is recorded in `lib/orders.ts` under a minted `x402_…` reference,
+returned as `orderId`/`receiptUrl` in the 200 body, and rendered on `/receipt/[id]` beside MPP
+charges. [`docs/mpp-vs-x402.md`](docs/mpp-vs-x402.md) compares the two challenge formats line
+by line.
 
 ## Going to production
 
@@ -509,15 +514,18 @@ packages/nextjs/
     demo.ts               hasHedera() / hasStripe() / hasX402() — per-rail detection
     mppx.ts               MPP server: both charge methods, one challenge
     hederaCheckout.ts     Browser half of the Hedera rail (402 → sign → retry)
+    hederaBuyer.ts        Buyer primitives both browser rails share (account, key, faucet)
     hederaOperator.ts     Operator client and resolvedNetwork()
-    orders.ts             Settled-order store, keyed by challenge id
+    orders.ts             Settled-order store: MPP challenge ids and minted x402 references
     x402.ts               Facilitator capability probe, canSettleX402(), verify/settle calls
+    x402Checkout.ts       Browser half of the x402 rail (402 → partially sign → settle)
     products.ts           Fixture catalogue (prices are decimal strings, never floats)
   components/             Storefront components + the Scaffold-HBAR wallet/theme stack
   public/products/        Local SVG placeholders — no product image is fetched remotely
   scripts/
     make-burner.mjs       Creates and funds a throwaway testnet buyer
     e2e-charge.mjs        Exercises the pull-mode Hedera payment path end to end
+    e2e-x402.mjs          The same purchase over x402, via the official @x402/fetch client
 ```
 
 Prerequisites: Node.js ≥ 20.18.3, Git, Yarn (3.2.3 — the template is Yarn-only; `npm install`

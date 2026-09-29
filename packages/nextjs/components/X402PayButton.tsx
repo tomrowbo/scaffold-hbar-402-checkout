@@ -2,17 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Transaction } from "@hiero-ledger/sdk";
-import { useHederaSigner } from "~~/hooks/useHederaSigner";
 import { CheckoutError, hasBurnerSigner } from "~~/lib/hederaBuyer";
-import { payWithHedera } from "~~/lib/hederaCheckout";
-import { hederaCaipId } from "~~/utils/scaffold-hbar/hederaIdentity";
-import { transactionToBase64String } from "~~/utils/scaffold-hbar/hederaTxUtils";
+import { payWithX402 } from "~~/lib/x402Checkout";
 
-type HederaPayButtonProps = {
+type X402PayButtonProps = {
   productId: string;
   priceUsd: string;
-  /** False when the server has no merchant account, so settlement would have nothing to verify. */
+  /** False when no facilitator is configured, so the 402 could not be settled. */
   enabled: boolean;
 };
 
@@ -22,14 +18,14 @@ type Status =
   | { kind: "error"; message: string; hint?: string };
 
 /**
- * Drives the 402 → transfer → retry loop for the native Hedera rail.
+ * Drives the 402 → partially signed transfer → retry loop for the x402 comparison rail.
  *
- * Signs with a connected wallet when there is one, and otherwise with the burner key
- * on-chain validation injects at `localStorage['burnerWallet.pk']`.
+ * The twin of {@link HederaPayButton}, minus the wallet path: x402's `exact` scheme on
+ * Hedera needs signed-but-unsubmitted bytes, so only the burner key at
+ * `localStorage['burnerWallet.pk']` can sign it from a page (see `lib/x402Checkout.ts`).
  */
-export const HederaPayButton = ({ productId, priceUsd, enabled }: HederaPayButtonProps) => {
+export const X402PayButton = ({ productId, priceUsd, enabled }: X402PayButtonProps) => {
   const router = useRouter();
-  const { provider, accountId } = useHederaSigner();
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [burnerAvailable, setBurnerAvailable] = useState(false);
 
@@ -37,33 +33,17 @@ export const HederaPayButton = ({ productId, priceUsd, enabled }: HederaPayButto
   useEffect(() => setBurnerAvailable(hasBurnerSigner()), []);
 
   const pay = useCallback(async () => {
-    setStatus({ kind: "working", message: "Requesting a payment challenge…" });
+    setStatus({ kind: "working", message: "Requesting an x402 challenge…" });
     try {
-      const wallet =
-        provider && accountId
-          ? {
-              accountId,
-              execute: async (transaction: Transaction) => {
-                const result = await provider.hedera_signAndExecuteTransaction({
-                  signerAccountId: hederaCaipId(accountId),
-                  transactionList: transactionToBase64String(transaction),
-                });
-                if (!result?.transactionId) throw new Error("The wallet returned no transaction id");
-                return result.transactionId;
-              },
-            }
-          : undefined;
-
-      const order = await payWithHedera({
+      const order = await payWithX402({
         productId,
-        wallet,
         onProgress: message => setStatus({ kind: "working", message }),
       });
       if (order.receiptUrl) {
         router.push(order.receiptUrl);
         return;
       }
-      // Paid and receipted, but the server lost track of the order behind it.
+      // Settled on chain, but the server lost track of the order behind it.
       setStatus({
         kind: "error",
         message: "The payment settled but the server could not build a receipt page for it.",
@@ -76,9 +56,8 @@ export const HederaPayButton = ({ productId, priceUsd, enabled }: HederaPayButto
         setStatus({ kind: "error", message: error instanceof Error ? error.message : String(error) });
       }
     }
-  }, [accountId, productId, provider, router]);
+  }, [productId, router]);
 
-  const hasSigner = Boolean(accountId) || burnerAvailable;
   const working = status.kind === "working";
 
   return (
@@ -86,16 +65,19 @@ export const HederaPayButton = ({ productId, priceUsd, enabled }: HederaPayButto
       <button
         type="button"
         className="btn btn-primary btn-sm w-full"
-        disabled={!enabled || !hasSigner || working}
+        disabled={!enabled || !burnerAvailable || working}
         onClick={pay}
-        data-testid="pay-with-hedera"
+        data-testid="pay-with-x402"
       >
         {working ? <span className="loading loading-spinner loading-xs" /> : null}
-        Pay {priceUsd} USDC on Hedera
+        Pay {priceUsd} USDC via x402
       </button>
 
-      {enabled && !hasSigner && (
-        <p className="text-xs text-base-content/60 m-0">Connect a Hedera wallet to pay with USDC.</p>
+      {enabled && !burnerAvailable && (
+        <p className="text-xs text-base-content/60 m-0">
+          Inject a test key at <code className="bg-base-300 px-1 py-0.5 rounded text-[11px]">burnerWallet.pk</code> to
+          pay with x402 — run <code className="bg-base-300 px-1 py-0.5 rounded text-[11px]">yarn make:burner</code>.
+        </p>
       )}
 
       {status.kind === "working" && (
