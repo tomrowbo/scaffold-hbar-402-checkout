@@ -96,7 +96,7 @@ export function realmFromRequest(request: Request): string {
  * default below is padded to length. It is public knowledge and MUST be replaced in any
  * real deployment — generate one with `openssl rand -base64 32`.
  */
-const INSECURE_DEV_SECRET_KEY = "mpp-checkout-dev-only-insecure-secret-do-not-deploy";
+const INSECURE_DEV_SECRET_KEY = "402-checkout-dev-only-insecure-secret-do-not-deploy";
 
 /**
  * Throws at module load when real money could be accepted against the public default: on

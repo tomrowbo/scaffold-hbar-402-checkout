@@ -86,9 +86,25 @@ if (have === null || have < amount) {
   const funded = await fetch(`${ORIGIN}/api/testnet/fund`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ accountId: payer, associateTransaction: associate }),
+    // Fund for *this* purchase. Without an amount the faucet has to assume the priciest item
+    // in the catalogue, so an operator that could cover this one comfortably is refused.
+    body: JSON.stringify({ accountId: payer, amount: String(amount), associateTransaction: associate }),
   });
-  console.log("4. fund:", funded.status, await funded.text());
+  const fundBody = await funded.text();
+  console.log("4. fund:", funded.status, fundBody);
+  // A buyer with nothing to spend cannot settle. Carrying on signs a transfer that is
+  // rejected for `insufficient_balance` two steps later, burying the real error.
+  if (!funded.ok) {
+    let detail = fundBody;
+    try {
+      const parsed = JSON.parse(fundBody);
+      detail = parsed.detail ?? parsed.error ?? fundBody;
+    } catch {
+      // Not JSON — the raw body is the best error we have.
+    }
+    console.error(`\n\u2717 could not fund the buyer: ${detail}`);
+    process.exit(1);
+  }
   // The Mirror Node lags consensus by a second or two, and both this script's own check and
   // the facilitator's preflight read the balance from it — so poll rather than read once, or
   // a freshly funded buyer is refused for `insufficient_balance` it does in fact have.

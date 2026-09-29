@@ -1,5 +1,5 @@
 {
-  "name": "mpp-checkout-yarn",
+  "name": "402-checkout-yarn",
   "description": "Commands that must pass after every attempt.",
   "requiresNoSecrets": true,
   "forbiddenCommands": ["npm install", "npm run", "pnpm install", "pnpm run"],

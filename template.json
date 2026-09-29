@@ -1,5 +1,5 @@
 {
-  "name": "mpp-checkout",
+  "name": "402-checkout",
   "description": "A storefront with three working payment rails: Stripe card and native Hedera USDC on one MPP 402, and x402 beside it.",
   "create-scaffold-hbar": {
     "capabilities": {

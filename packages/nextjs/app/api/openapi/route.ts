@@ -37,12 +37,12 @@ function handleDiscovery(request: Request): Response {
     currency: USDC_TOKEN_ID,
     decimals: USDC_DECIMALS,
     recipient: chargeRecipient(),
-    description: `MPP Checkout — ${product.name}`,
+    description: `402 Checkout — ${product.name}`,
     meta: { product: product.id, amountUsd: product.priceUsd },
   }) as unknown as DiscoveryHandler;
 
   const doc = generate(instance, {
-    info: { title: "MPP Checkout", version: "1.0.0" },
+    info: { title: "402 Checkout", version: "1.0.0" },
     serviceInfo: {
       categories: ["e-commerce"],
       docs: { homepage: `${origin}/`, llms: `${origin}/llms.txt` },
@@ -74,7 +74,7 @@ function handleDiscovery(request: Request): Response {
       "x-payment-info": PaymentInfo.parse({
         amount: toBaseUnits(product.priceUsd, USDC_DECIMALS),
         currency: USDC_TOKEN_ID,
-        description: `MPP Checkout — ${product.name}`,
+        description: `402 Checkout — ${product.name}`,
         intent: "charge",
         method: "x402",
         network: X402_NETWORK,

@@ -1,4 +1,4 @@
-# Scaffold-HBAR — MPP Checkout
+# Scaffold-HBAR — 402 Checkout
 
 **What this is for.** `402 Payment Required` has sat in the HTTP spec since 1997 with nothing
 standard behind it. Two proposals now fill it in, and both exist because the buyer is
@@ -48,7 +48,7 @@ reads `Demo mode` instead, and the store still runs.
 `.yarnrc.yml`, so `corepack enable` is enough — you do not install it yourself).
 
 ```bash
-npm create scaffold-hbar@latest -- --template mpp-checkout
+npm create scaffold-hbar@latest -- --template tomrowbo/scaffold-hbar-402-checkout
 ```
 
 `npm create` here runs the *scaffolder*
@@ -111,11 +111,11 @@ HTTP/1.1 402 Payment Required
 content-type: application/problem+json
 www-authenticate: Payment id="-_xEH9nHBj52K3idMY3JbZKLzk2WyzZhHqb_srQ9X6o", realm="localhost:3000",
   method="hedera", intent="charge", request="eyJhbW91bnQiOiIyNDAwMDAwMCIsImN1cnJlbmN5IjoiMC4wLjU0NDkiLCJtZXRob2REZXRhaWxzIjp7ImNoYWluSWQiOjI5Nn0sInJlY2lwaWVudCI6IjAuMC4wIn0",
-  description="MPP Checkout — HBAR Logo Tee", expires="2026-09-22T23:35:57.547Z",
+  description="402 Checkout — HBAR Logo Tee", expires="2026-09-22T23:35:57.547Z",
   opaque="eyJhbW91bnRVc2QiOiIyNC4wMCIsInByb2R1Y3QiOiJoYmFyLXRlZSJ9",
   Payment id="x_FqLNbLofS75N7jKaDnBRfZa3svPhh6ZJ_X6i2ByWk", realm="localhost:3000",
   method="stripe", intent="charge", request="eyJhbW91bnQiOiIyNDAwIiwiY3VycmVuY3kiOiJ1c2QiLCJtZXRob2REZXRhaWxzIjp7Im5ldHdvcmtJZCI6ImRlbW8iLCJwYXltZW50TWV0aG9kVHlwZXMiOlsiY2FyZCJdfX0",
-  description="MPP Checkout — HBAR Logo Tee", expires="2026-09-22T23:35:57.556Z",
+  description="402 Checkout — HBAR Logo Tee", expires="2026-09-22T23:35:57.556Z",
   opaque="eyJhbW91bnRVc2QiOiIyNC4wMCIsInByb2R1Y3QiOiJoYmFyLXRlZSJ9"
 x-mpp-demo-mode: hedera,stripe
 ```
@@ -589,7 +589,7 @@ payment-required: eyJ4NDAyVmVyc2lvbiI6MiwiZXJyb3IiOiJwYXltZW50IGlzIHJlcXVpcmVkIi
 
 {"x402Version":2,"error":"payment is required",
  "resource":{"url":"http://localhost:3000/api/x402?product=hbar-tee",
- "description":"MPP Checkout - HBAR Logo Tee","mimeType":"application/json","serviceName":"MPP Checkout"},
+ "description":"402 Checkout - HBAR Logo Tee","mimeType":"application/json","serviceName":"402 Checkout"},
  "accepts":[{"scheme":"exact","network":"hedera:testnet","amount":"24000000","asset":"0.0.5449",
  "payTo":"0.0.0","maxTimeoutSeconds":30,"extra":{}}],"demo":true}
 ```

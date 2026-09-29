@@ -247,7 +247,7 @@ export async function POST(request: Request): Promise<Response> {
     const transfer = await new TransferTransaction()
       .addTokenTransfer(token, AccountId.fromString(operatorId), -amount)
       .addTokenTransfer(token, AccountId.fromString(accountId), amount)
-      .setTransactionMemo("mpp-checkout testnet buyer top-up")
+      .setTransactionMemo("402-checkout testnet buyer top-up")
       .execute(client);
     const receipt = await transfer.getReceipt(client);
 

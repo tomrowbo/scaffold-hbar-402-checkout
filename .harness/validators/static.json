@@ -1,5 +1,5 @@
 {
-  "name": "mpp-checkout-static",
+  "name": "402-checkout-static",
   "description": "Static invariants for the MPP checkout template.",
   "jsonAssertions": [
     {

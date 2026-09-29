@@ -97,9 +97,9 @@ function paymentRequired(
     ...(error ? { error } : {}),
     resource: {
       url: resourceUrl(request, product),
-      description: `MPP Checkout - ${product.name}`,
+      description: `402 Checkout - ${product.name}`,
       mimeType: "application/json",
-      serviceName: "MPP Checkout",
+      serviceName: "402 Checkout",
     },
     accepts: [paymentRequirements(product, extra)],
   };
@@ -132,7 +132,7 @@ function renderX402DemoPanel(product: Product, reason: string, headers: Headers)
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MPP Checkout — x402 demo mode</title>
+    <title>402 Checkout — x402 demo mode</title>
     <style>
       body { font-family: system-ui, sans-serif; max-width: 28rem; margin: 3rem auto; padding: 0 1rem; color: #1a1a1a; }
       .badge { display: inline-block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; background: #eee; color: #555; border-radius: 999px; padding: 0.15rem 0.6rem; margin-bottom: 1rem; }

@@ -13,7 +13,8 @@ import { Attribution } from "mppx-hedera";
 const MIRROR = "https://testnet.mirrornode.hedera.com";
 const BURNER_PK = process.argv[2];
 const PRODUCT = process.argv[3] ?? "hashgraph-mug";
-const ENDPOINT = `http://localhost:3000/api/pay?product=${PRODUCT}`;
+const ORIGIN = process.env.E2E_ORIGIN ?? "http://localhost:3000";
+const ENDPOINT = `${ORIGIN}/api/pay?product=${PRODUCT}`;
 
 const b64 = bytes => Buffer.from(bytes).toString("base64");
 const look = async id => {
@@ -61,7 +62,7 @@ if (have === null || have < amount) {
           ).toBytes(),
         )
       : undefined;
-  const f = await fetch("http://localhost:3000/api/testnet/fund", {
+  const f = await fetch(`${ORIGIN}/api/testnet/fund`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     // Fund for *this* charge. Without an amount the faucet has to assume the priciest item

@@ -20,7 +20,7 @@ function handleLlmsTxt(request: Request): Response {
     ? "- stripe (card): advertised but stubbed in this deployment — the credential is dropped and the challenge reissued, never settled."
     : "- stripe (card): a Shared Payment Token against a live PaymentIntent.";
 
-  const body = `# MPP Checkout (demo store)
+  const body = `# 402 Checkout (demo store)
 
 This is a storefront selling the fixture products below. Payment is required before the
 purchased response is returned: unpaid requests to the paid endpoints answer HTTP 402 with a

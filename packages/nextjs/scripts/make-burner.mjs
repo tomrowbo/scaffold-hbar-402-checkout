@@ -45,7 +45,7 @@ const evmAddress = `0x${burner.publicKey.toEvmAddress()}`;
 const submitted = await new TransferTransaction()
   .addHbarTransfer(AccountId.fromString(operatorId), new Hbar(-HBAR_AMOUNT))
   .addHbarTransfer(AccountId.fromEvmAddress(0, 0, evmAddress), new Hbar(HBAR_AMOUNT))
-  .setTransactionMemo("mpp-checkout burner buyer")
+  .setTransactionMemo("402-checkout burner buyer")
   .execute(client);
 const status = (await submitted.getReceipt(client)).status.toString();
 client.close();

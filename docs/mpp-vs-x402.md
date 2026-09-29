@@ -25,10 +25,10 @@ $ curl -i -H 'Accept: application/json' 'http://localhost:3000/api/pay?product=h
 HTTP/1.1 402 Payment Required
 content-type: application/problem+json
 www-authenticate: Payment id="-_xEH9…X6o", realm="localhost:3000", method="hedera",
-  intent="charge", request="eyJhbW91bnQiOiIyNDAwMDAwMCIs…", description="MPP Checkout — HBAR Logo Tee",
+  intent="charge", request="eyJhbW91bnQiOiIyNDAwMDAwMCIs…", description="402 Checkout — HBAR Logo Tee",
   expires="2026-09-22T23:35:57.547Z", opaque="eyJhbW91bnRVc2Qi…",
   Payment id="x_FqL…ByWk", realm="localhost:3000", method="stripe",
-  intent="charge", request="eyJhbW91bnQiOiIyNDAwIiw…", description="MPP Checkout — HBAR Logo Tee",
+  intent="charge", request="eyJhbW91bnQiOiIyNDAwIiw…", description="402 Checkout — HBAR Logo Tee",
   expires="2026-09-22T23:35:57.556Z", opaque="eyJhbW91bnRVc2Qi…"
 ```
 
@@ -55,9 +55,9 @@ facilitator configured the body also carries `"demo": true`, and the response ca
   "error": "payment is required",
   "resource": {
     "url": "http://localhost:3000/api/x402?product=hbar-tee",
-    "description": "MPP Checkout - HBAR Logo Tee",
+    "description": "402 Checkout - HBAR Logo Tee",
     "mimeType": "application/json",
-    "serviceName": "MPP Checkout"
+    "serviceName": "402 Checkout"
   },
   "accepts": [
     {
