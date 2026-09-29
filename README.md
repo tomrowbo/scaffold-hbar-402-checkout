@@ -65,7 +65,10 @@ Three things to expect on a first run, none of them a problem:
   the versions wagmi and Next.js pin here. Nothing is missing and nothing is broken — both
   on-chain rails settle against exactly these versions, and the walkthrough below proves it
   on the Mirror Node. `sharp` is Next.js's optional image-optimisation dependency; this
-  template ships local images and renders them `unoptimized`, so it never calls it.
+  template ships local images and renders them `unoptimized`, so it never calls it — and
+  `dependenciesMeta` in the root `package.json` tells Yarn not to build it. Without that
+  a fresh install prints `YN0009: sharp couldn't be built successfully`, because sharp
+  falls back to compiling from source wherever it has no prebuilt binary.
 - The dev server prints `Ready in ~2.5s` and *then* compiles the first page you open, which
   takes about **30 seconds** (`✓ Compiled / in 30.4s (11154 modules)`).
 - **Every route is slow on its first visit** — `/`, `/checkout` *and* `/receipt/[id]`, 10–30s
