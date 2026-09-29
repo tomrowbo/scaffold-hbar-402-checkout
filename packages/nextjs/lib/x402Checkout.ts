@@ -1,5 +1,5 @@
 /**
- * Browser half of the x402 comparison rail: 402 → partially sign a USDC transfer → retry
+ * Browser half of the x402 rail: 402 → partially sign a USDC transfer → retry
  * with `PAYMENT-SIGNATURE`. Client-only, and the twin of `lib/hederaCheckout.ts` — same
  * buyer, same token, same merchant, the other protocol.
  *

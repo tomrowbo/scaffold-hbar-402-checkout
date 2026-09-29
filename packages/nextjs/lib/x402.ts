@@ -1,5 +1,5 @@
 /**
- * x402 comparison rail: the network-facing half of `hasX402()`.
+ * x402 rail: the network-facing half of `hasX402()`.
  *
  * `hasX402()` in `lib/demo.ts` only says a facilitator URL is configured. Whether that
  * facilitator will actually settle on Hedera is a separate, network-dependent question, asked

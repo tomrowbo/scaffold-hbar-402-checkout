@@ -19,7 +19,7 @@ type Status =
   | { kind: "error"; message: string; hint?: string };
 
 /**
- * Drives the 402 → partially signed transfer → retry loop for the x402 comparison rail.
+ * Drives the 402 → partially signed transfer → retry loop for the x402 rail.
  *
  * The twin of {@link HederaPayButton}, minus the wallet path: x402's `exact` scheme on
  * Hedera needs signed-but-unsubmitted bytes, so only the burner key at

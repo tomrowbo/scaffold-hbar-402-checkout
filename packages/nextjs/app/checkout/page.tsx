@@ -41,7 +41,8 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
     },
     {
       label: "x402",
-      description: "The same purchase routed through an x402 facilitator, for protocol comparison.",
+      description:
+        "The same purchase settled through an x402 facilitator — a third rail on the same USDC and the same merchant account.",
       envVars: ["AX402_FACILITATOR_URL"],
       enabled: x402Enabled,
       action: <X402PayButton productId={product.id} priceUsd={product.priceUsd} enabled={x402Enabled} />,

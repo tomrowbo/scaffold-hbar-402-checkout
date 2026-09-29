@@ -21,6 +21,13 @@ advertising two rails at once** — a Stripe card charge and a native Hedera USD
 with `/api/x402` serving the same product, the same amount and the same merchant account as
 an x402 challenge beside it.
 
+**All three are rails you can ship on**, not two rails and a demo. Each settles a real
+payment — a Stripe PaymentIntent, an HTS transfer confirmed on the Mirror Node, a facilitator
+settlement — records an order, and lands the buyer on the same `/receipt/[id]`. The one
+difference is that x402 has no connected-wallet path: its `exact` scheme on Hedera needs
+signed-but-unsubmitted transaction bytes, which a wallet will not hand back, so that rail
+signs with a local key. That is the protocol's constraint, not this template's.
+
 It boots with **no `.env` file and no environment variables at all**. Each rail switches
 itself on independently once its own variables are present, so a developer holding only
 Stripe keys gets a live card path and honest demo stubs everywhere else.

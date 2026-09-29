@@ -70,7 +70,7 @@ function handleDiscovery(request: Request): Response {
   doc.paths["/api/x402"] = {
     get: {
       responses: { "402": { description: "Payment Required" }, "200": { description: "Successful response" } },
-      summary: "x402 comparison rail — same product, amount and recipient as /api/pay, in the x402 protocol",
+      summary: "x402 rail — same product, amount and recipient as /api/pay, in the x402 protocol",
       "x-payment-info": PaymentInfo.parse({
         amount: toBaseUnits(product.priceUsd, USDC_DECIMALS),
         currency: USDC_TOKEN_ID,

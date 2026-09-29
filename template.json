@@ -1,11 +1,17 @@
 {
   "name": "mpp-checkout",
-  "description": "One MPP endpoint accepting Stripe card, native Hedera USDC, and x402 side by side.",
+  "description": "A storefront with three working payment rails: Stripe card and native Hedera USDC on one MPP 402, and x402 beside it.",
   "create-scaffold-hbar": {
     "capabilities": {
-      "frontend": ["nextjs-app"],
-      "solidityFramework": ["none"],
-      "packageManager": ["yarn"]
+      "frontend": [
+        "nextjs-app"
+      ],
+      "solidityFramework": [
+        "none"
+      ],
+      "packageManager": [
+        "yarn"
+      ]
     },
     "defaults": {
       "frontend": "nextjs-app",

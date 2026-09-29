@@ -19,7 +19,7 @@ import { randomUUID } from "node:crypto";
 export type SettledOrder = {
   /** Public order reference in `/receipt/[id]`: an MPP challenge id, or a minted `x402_…`. */
   id: string;
-  /** How it settled: MPP's `"hedera"` or `"stripe"`, or `"x402"` for the comparison rail. */
+  /** How it settled: MPP's `"hedera"` or `"stripe"`, or `"x402"` for the x402 rail. */
   method: OrderMethod;
   productId: string;
   /** Human-readable price as shown in the catalogue, e.g. `"24.00"`. */

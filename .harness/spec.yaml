@@ -4,7 +4,7 @@ name: mpp-checkout
 description: >
   A storefront whose single MPP endpoint accepts Stripe card payments and
   native Hedera USDC through one HTTP 402 challenge, with an x402 route
-  alongside for protocol comparison.
+  alongside as a third rail.
 
 agent: claude
 
