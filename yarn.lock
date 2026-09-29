@@ -9918,6 +9918,9 @@ __metadata:
     husky: ^9.1.6
     lint-staged: ^15.2.10
     playwright: ^1.63.0
+  dependenciesMeta:
+    sharp:
+      built: false
   languageName: unknown
   linkType: soft
 
