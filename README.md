@@ -104,12 +104,17 @@ Three things to expect on a first run, none of them a problem:
   falls back to compiling from source wherever it has no prebuilt binary.
 - The dev server prints `Ready in ~2.5s` and *then* compiles the first page you open, which
   takes **30–60 seconds** (`✓ Compiled / in 55.6s (11154 modules)` on a loaded laptop).
-- **Every route is slow on its first visit** — `/`, `/checkout` *and* `/receipt/[id]`, and
-  `/checkout` is the worst at up to two minutes cold, because it pulls the wallet stack.
-  While a route compiles the browser shows a white page with a small spinner in the middle of
-  it. It reads as a broken app rather than a slow one. It is not; the page appears when
-  compilation finishes and every later load is instant. If you only want to look at the
-  store, `yarn next:build && yarn next:serve` has none of this.
+- **Every route is slow on its first visit.** Measured cold on a laptop that was also
+  running other work: `/` 57s, `/checkout` 76s, `/receipt/[id]` 133s, `/api/x402` 171s. While
+  a route compiles the browser shows a white page with a small spinner in the middle of it.
+  It reads as a broken app rather than a slow one. It is not — the page appears when
+  compilation finishes, and every later load is 0.07–0.1s.
+
+  **None of this is production.** `yarn next:build && yarn next:serve` boots in half a second
+  and serves pages in 11–41ms. If the dev server's first-visit compile is in your way, use
+  that instead. One catch: a later `yarn next:dev` overwrites `.next`, so `yarn next:serve`
+  then fails with `Could not find a production build in the '.next' directory` — rebuild
+  before serving again.
 
 That is the whole setup. Open <http://localhost:3000>, pick an item, and walk through
 checkout. `/`, `/checkout` and `/receipt/[id]` all render; every payment control shows a
@@ -160,6 +165,45 @@ USDC base units on Hedera testnet token `0.0.5449`; cents in USD on Stripe. `rec
 is `0.0.0` and `networkId` is `demo` because nothing is configured yet —
 `x-mpp-demo-mode: hedera,stripe` says exactly which rails are stubbed. Configure a rail and
 its half of this header becomes real, independently of the other.
+
+## Getting testnet USDC (`0.0.5449`)
+
+Both on-chain rails move testnet USDC `0.0.5449`, and the
+operator has to be holding some before anything settles — `/api/testnet/fund` moves the
+operator's own balance to a test buyer, it is not a mint. The Hedera Portal gives you HBAR,
+not USDC, and this is the part that costs people an afternoon: **no faucet hands out
+`0.0.5449` directly.**
+
+What does work, in two steps:
+
+1. **Get testnet HBAR** from the [Hedera Portal faucet](https://portal.hedera.com/faucet) —
+   100 HBAR per day against your testnet account id.
+2. **Swap it for `0.0.5449`** on SaucerSwap's testnet deployment,
+   <https://testnet.saucerswap.finance>. Connect the operator account, let it associate
+   `0.0.5449`, and swap HBAR for USDC. Its USDC/HBAR pool (contract `0.0.2661044`) is the
+   deepest market for this token on testnet and is still actively traded — check the reserves
+   yourself rather than taking this README's word for it:
+
+   ```console
+   $ curl -s https://test-api.saucerswap.finance/pools/3 \
+     | jq '{a: .tokenA.id, reserveA: .tokenReserveA, b: .tokenB.id, reserveB: .tokenReserveB}'
+   {
+     "a": "0.0.5449",
+     "reserveA": "307599305282",
+     "b": "0.0.15058",
+     "reserveB": "13486064572365"
+   }
+   ```
+
+   (`0.0.15058` is WHBAR, 8 decimals. Testnet pricing is arbitrary and bears no relation to
+   the real HBAR/USDC rate — that is fine, it is play money either way.)
+
+**Not Circle's faucet.** <https://faucet.circle.com> does list Hedera Testnet and does hand
+out 20 USDC, but the token it sends is **`0.0.429274`**, the other testnet USDC. `mppx-hedera`
+pins `0.0.5449` for chain 296 and checks the Mirror Node for transfers of *that* token, so
+USDC from Circle's faucet cannot settle a charge here, and no amount of configuration will
+make it. If someone already holds `0.0.5449`, a plain transfer works too.
+
 
 ## Rail: Hedera USDC (native, no facilitator)
 
@@ -229,44 +273,6 @@ use `@`.
 
 > Testnet USDC in this template is **`0.0.5449`**. `0.0.429274` is a *different* testnet
 > token with the same name, symbol and decimals — charges against it cannot be verified here.
-
-### Getting testnet USDC (`0.0.5449`)
-
-Read this before the walkthrough. Both on-chain rails move testnet USDC `0.0.5449`, and the
-operator has to be holding some before anything settles — `/api/testnet/fund` moves the
-operator's own balance to a test buyer, it is not a mint. The Hedera Portal gives you HBAR,
-not USDC, and this is the part that costs people an afternoon: **no faucet hands out
-`0.0.5449` directly.**
-
-What does work, in two steps:
-
-1. **Get testnet HBAR** from the [Hedera Portal faucet](https://portal.hedera.com/faucet) —
-   100 HBAR per day against your testnet account id.
-2. **Swap it for `0.0.5449`** on SaucerSwap's testnet deployment,
-   <https://testnet.saucerswap.finance>. Connect the operator account, let it associate
-   `0.0.5449`, and swap HBAR for USDC. Its USDC/HBAR pool (contract `0.0.2661044`) is the
-   deepest market for this token on testnet and is still actively traded — check the reserves
-   yourself rather than taking this README's word for it:
-
-   ```console
-   $ curl -s https://test-api.saucerswap.finance/pools/3 \
-     | jq '{a: .tokenA.id, reserveA: .tokenReserveA, b: .tokenB.id, reserveB: .tokenReserveB}'
-   {
-     "a": "0.0.5449",
-     "reserveA": "307599305282",
-     "b": "0.0.15058",
-     "reserveB": "13486064572365"
-   }
-   ```
-
-   (`0.0.15058` is WHBAR, 8 decimals. Testnet pricing is arbitrary and bears no relation to
-   the real HBAR/USDC rate — that is fine, it is play money either way.)
-
-**Not Circle's faucet.** <https://faucet.circle.com> does list Hedera Testnet and does hand
-out 20 USDC, but the token it sends is **`0.0.429274`**, the other testnet USDC. `mppx-hedera`
-pins `0.0.5449` for chain 296 and checks the Mirror Node for transfers of *that* token, so
-USDC from Circle's faucet cannot settle a charge here, and no amount of configuration will
-make it. If someone already holds `0.0.5449`, a plain transfer works too.
 
 ## Your first payment (Hedera testnet)
 
@@ -750,6 +756,8 @@ packages/nextjs/
     api/pay/token/        Mints a Stripe Shared Payment Token; 503 in demo mode
     api/testnet/fund/     Test-buyer USDC faucet; 403 unless the network is testnet
     api/x402/             The same offer as an x402 v2 challenge, settled via the facilitator
+    api/llms/             Served at /llms.txt — agent briefing: rails, token, network, how to pay
+    api/openapi/          Served at /openapi.json — OpenAPI 3.1 for both payment endpoints
   lib/
     demo.ts               hasHedera() / hasStripe() / hasX402() — per-rail detection
     mppx.ts               MPP server: both charge methods, one challenge
