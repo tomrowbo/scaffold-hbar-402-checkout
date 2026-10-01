@@ -38,16 +38,16 @@ export const PaymentOption = ({ label, description, envVars, enabled, icon, acti
         )}
 
         {!enabled && (
-          <p className="text-xs text-base-content/60 m-0">
-            Running in <span className="font-semibold">demo mode</span> — set{" "}
-            {envVars.map((name, index) => (
-              <React.Fragment key={name}>
-                {index > 0 && " "}
-                <code className="bg-base-300 px-1 py-0.5 rounded text-[11px]">{name}</code>
-              </React.Fragment>
-            ))}{" "}
-            in <code className="bg-base-300 px-1 py-0.5 rounded text-[11px]">packages/nextjs/.env</code> to enable this
-            rail.
+          // The variable names are the one thing a first run actually needs; everything
+          // else about this rail is in the README.
+          <p className="text-xs text-base-content/60 m-0 flex flex-wrap gap-1 items-center">
+            <span>Set in</span>
+            <code className="bg-base-300 px-1 py-0.5 rounded text-[11px]">packages/nextjs/.env</code>
+            {envVars.map(name => (
+              <code key={name} className="bg-base-300 px-1 py-0.5 rounded text-[11px]">
+                {name}
+              </code>
+            ))}
           </p>
         )}
       </div>

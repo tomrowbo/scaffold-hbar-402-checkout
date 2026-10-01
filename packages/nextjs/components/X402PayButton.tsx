@@ -77,8 +77,7 @@ export const X402PayButton = ({ productId, priceUsd, enabled }: X402PayButtonPro
 
       {enabled && !burnerAvailable && (
         <p className="text-xs text-base-content/60 m-0">
-          Inject a test key at <code className="bg-base-300 px-1 py-0.5 rounded text-[11px]">burnerWallet.pk</code> to
-          pay with x402 — run <code className="bg-base-300 px-1 py-0.5 rounded text-[11px]">yarn make:burner</code>.
+          Needs a local key — run <code className="bg-base-300 px-1 py-0.5 rounded text-[11px]">yarn make:burner</code>.
         </p>
       )}
 

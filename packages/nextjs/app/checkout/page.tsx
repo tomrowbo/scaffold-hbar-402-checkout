@@ -27,22 +27,21 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
   const paymentOptions = [
     {
       label: "Card",
-      description: "Stripe settles the card and answers the 402 challenge on the buyer's behalf.",
+      description: "Settled by Stripe.",
       envVars: ["STRIPE_SECRET_KEY", "STRIPE_PUBLISHABLE_KEY", "STRIPE_NETWORK_ID"],
       enabled: cardEnabled,
       action: <CardPayButton productId={product.id} priceUsd={product.priceUsd} enabled={cardEnabled} />,
     },
     {
       label: "Hedera",
-      description: `Native USDC (${USDC_TOKEN_ID}) transfer on Hedera, bound to the challenge by a 32-byte attribution memo and confirmed on the Mirror Node.`,
+      description: `Native USDC (${USDC_TOKEN_ID}) transfer on Hedera.`,
       envVars: ["HEDERA_OPERATOR_ID", "HEDERA_OPERATOR_KEY"],
       enabled: hederaEnabled,
       action: <HederaPayButton productId={product.id} priceUsd={product.priceUsd} enabled={hederaEnabled} />,
     },
     {
       label: "x402",
-      description:
-        "The same purchase settled through an x402 facilitator — a third rail on the same USDC and the same merchant account.",
+      description: "Same USDC, settled over x402.",
       envVars: ["AX402_FACILITATOR_URL"],
       enabled: x402Enabled,
       action: <X402PayButton productId={product.id} priceUsd={product.priceUsd} enabled={x402Enabled} />,
@@ -86,10 +85,7 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
           </div>
         </div>
 
-        <h2 className="text-xl font-semibold m-0 mb-1">Payment options</h2>
-        <p className="text-sm text-base-content/70 m-0 mb-5">
-          Detection is per-integration — configuring one rail does not stub out the others.
-        </p>
+        <h2 className="text-xl font-semibold m-0 mb-5">Payment options</h2>
 
         <section aria-label="Payment options" className="grid gap-5 grid-cols-1 md:grid-cols-3">
           {paymentOptions.map(option => (
@@ -97,21 +93,16 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
           ))}
         </section>
 
-        <div className="alert mt-8 border border-base-300 bg-base-100 shadow-sm">
-          <span className="text-sm">
-            Every rail settles through one endpoint. Inspect the raw protocol at{" "}
-            <Link href={`/api/pay?product=${product.id}`} className="link link-primary font-mono text-xs">
-              /api/pay?product={product.id}
-            </Link>{" "}
-            — it answers <code className="bg-base-300/40 px-1 py-0.5 rounded text-xs">402</code> with a{" "}
-            <code className="bg-base-300/40 px-1 py-0.5 rounded text-xs">WWW-Authenticate: Payment</code> challenge, or
-            see a{" "}
-            <Link href={`/receipt/${product.id}`} className="link link-primary font-medium">
-              sample receipt
-            </Link>
-            .
-          </span>
-        </div>
+        <p className="text-sm text-base-content/60 mt-8 m-0">
+          Raw protocol:{" "}
+          <Link href={`/api/pay?product=${product.id}`} className="link link-primary font-mono text-xs">
+            /api/pay?product={product.id}
+          </Link>{" "}
+          ·{" "}
+          <Link href={`/receipt/${product.id}`} className="link link-primary">
+            sample receipt
+          </Link>
+        </p>
       </div>
     </div>
   );

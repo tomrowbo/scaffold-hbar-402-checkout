@@ -21,10 +21,7 @@ export default function StorePage() {
           <div className="hero-content w-full flex-col md:flex-row items-start md:items-center justify-between gap-4 py-7 sm:py-8">
             <div>
               <h1 className="text-3xl sm:text-4xl font-bold tracking-tight m-0">Hedera Merch Store</h1>
-              <p className="text-white/90 mt-2 mb-0 max-w-2xl">
-                Pick an item and go to Checkout. Card, Hedera and x402 sit side by side behind one payment endpoint —
-                each switches on independently when you add its credentials.
-              </p>
+              <p className="text-white/90 mt-2 mb-0 max-w-2xl">Card, Hedera and x402, behind one payment endpoint.</p>
             </div>
             <Image
               src="/Hedera-Icon-White.svg"
