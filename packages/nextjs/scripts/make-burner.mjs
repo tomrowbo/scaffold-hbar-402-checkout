@@ -20,9 +20,12 @@ import { AccountId, Client, Hbar, PrivateKey, TransferTransaction } from "@hiero
 const MIRROR = "https://testnet.mirrornode.hedera.com";
 const HBAR_AMOUNT = Number(process.argv[2] ?? 10);
 
-const network = (process.env.HEDERA_NETWORK ?? "testnet").trim().toLowerCase();
+// Matches resolvedNetwork() in lib/hederaOperator.ts: blank means testnet, so an untouched
+// copy of .env.example (which ships `HEDERA_NETWORK=`) works. `??` would not do this — an
+// empty string is a present value to it.
+const network = process.env.HEDERA_NETWORK?.trim().toLowerCase() || "testnet";
 if (network !== "testnet") {
-  console.error(`make:burner is testnet-only (HEDERA_NETWORK=${network}).`);
+  console.error(`make:burner is testnet-only, but HEDERA_NETWORK is "${network}". Unset it or set it to testnet.`);
   process.exit(1);
 }
 

@@ -54,6 +54,17 @@ if (!header) {
 const declared = decodePaymentRequiredHeader(header);
 const offer = declared.accepts[0];
 console.log("2. offer:", JSON.stringify({ ...offer, resource: declared.resource.url }));
+
+// Same reason as the guard in e2e-charge.mjs: step 4 funds the buyer from the operator, so
+// an unusable payTo must stop the run before any USDC moves rather than after.
+if (!/^\d+\.\d+\.\d+$/.test(offer.payTo ?? "")) {
+  console.error(
+    `\n\u2717 the server advertised payTo ${JSON.stringify(offer.payTo)}, which is not a Hedera account id.\n` +
+      `  Set HEDERA_RECIPIENT_ID (or HEDERA_OPERATOR_ID) in packages/nextjs/.env and restart the server.\n` +
+      `  Nothing has been sent on chain.`,
+  );
+  process.exit(1);
+}
 if (challenge.headers.get("X-MPP-Demo-Mode")) {
   console.error("   server is in x402 demo mode — set AX402_FACILITATOR_URL and restart it");
   process.exit(1);

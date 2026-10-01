@@ -48,8 +48,14 @@ reads `Demo mode` instead, and the store still runs.
 `.yarnrc.yml`, so `corepack enable` is enough — you do not install it yourself).
 
 ```bash
-npm create scaffold-hbar@latest -- --template tomrowbo/scaffold-hbar-402-checkout
+npm create scaffold-hbar@latest -- my-store --template tomrowbo/scaffold-hbar-402-checkout
 ```
+
+`my-store` is the directory to create — name it whatever you like. Leave it out and the
+scaffolder prompts for it, which fails outright with
+`ERR_TTY_INIT_FAILED: TTY initialization failed` anywhere without an interactive terminal (CI,
+a coding agent, most containers). Add `--yes` to accept the remaining defaults without
+prompts.
 
 `npm create` here runs the *scaffolder*
 ([`create-scaffold-hbar`](https://github.com/hedera-dev/create-scaffold-hbar)), which fetches
@@ -65,11 +71,21 @@ yarn install
 yarn next:dev    # http://localhost:3000
 ```
 
+**If port 3000 is busy**, Next quietly starts on 3001 instead — but the `curl` examples
+below, the `yarn e2e:*` scripts and the browser snippets all assume 3000, so they will talk
+to whatever else is on it. Pin a port you control and tell the scripts about it:
+
+```bash
+yarn next:dev --port 3399
+export E2E_ORIGIN=http://localhost:3399    # yarn e2e:charge / e2e:x402 / e2e:stripe read this
+```
+
 Three things to expect on a first run, none of them a problem:
 
 - **`yarn install` ends in about two dozen warnings** — 22 peer-dependency warnings
-  (`YN0002`, `YN0060`) and then `YN0009: sharp@npm:0.34.5 couldn't be built successfully`.
-  Several of the peer warnings name the payment library itself and look alarming:
+  (`YN0002`, `YN0060`) and one `YN0005` saying sharp's build was disabled, which it was, on
+  purpose (see the note on `sharp` below). Several of the peer warnings name the payment
+  library itself and look alarming:
 
   ```
   ➤ YN0060: │ @sh/nextjs@workspace:packages/nextjs provides viem (p978cc) with version 2.39.0, which doesn't satisfy what mppx requests

@@ -37,6 +37,18 @@ const { amount: amtStr, currency: tokenId, recipient } = challenge.request;
 const amount = BigInt(amtStr);
 console.log("2. parsed:", { id: challenge.id, realm: challenge.realm, amount: amtStr, tokenId, recipient });
 
+// Check the challenge BEFORE anything moves on chain. Step 5 funds the buyer from the
+// operator; a recipient the SDK cannot parse only blows up at step 6, by which point the
+// USDC is sitting in a throwaway account with no faucet to recover it from.
+if (!/^\d+\.\d+\.\d+$/.test(recipient ?? "")) {
+  console.error(
+    `\n\u2717 the server advertised recipient ${JSON.stringify(recipient)}, which is not a Hedera account id.\n` +
+      `  Set HEDERA_RECIPIENT_ID (or HEDERA_OPERATOR_ID) in packages/nextjs/.env and restart the server.\n` +
+      `  Nothing has been sent on chain.`,
+  );
+  process.exit(1);
+}
+
 const memo = Attribution.encode({ challengeId: challenge.id, serverId: challenge.realm ?? "" });
 console.log("3. memo:", memo);
 

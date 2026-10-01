@@ -127,7 +127,12 @@ function mppSecretKey(): string {
  * well-formed challenge with no environment at all.
  */
 export function chargeRecipient(): string {
-  return process.env.HEDERA_RECIPIENT_ID ?? process.env.HEDERA_OPERATOR_ID ?? "0.0.0";
+  // Blank must mean "not set". `.env.example` ships `HEDERA_RECIPIENT_ID=`, and `??` only
+  // falls through on null/undefined — so an untouched copy of that file used to advertise
+  // `recipient: ""` in the challenge and fail deep inside the SDK with
+  // `failed to parse entity id:` after the buyer had already been funded.
+  const configured = [process.env.HEDERA_RECIPIENT_ID, process.env.HEDERA_OPERATOR_ID].find(value => value?.trim());
+  return configured?.trim() ?? "0.0.0";
 }
 
 /** True when settlement can actually be verified against a real merchant account. */
