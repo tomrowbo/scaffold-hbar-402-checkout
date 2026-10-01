@@ -111,14 +111,17 @@ function paymentRequired(
  * output reads). `demo: true` is body-only — it is this template's own annotation, not part of
  * the x402 wire format, so it never reaches the header a real client parses.
  */
-function challengeResponse(declaration: PaymentRequired, demo: boolean): Response {
+function challengeResponse(declaration: PaymentRequired, demo: boolean, demoReason?: string): Response {
   const headers = new Headers({
     "PAYMENT-REQUIRED": encodePaymentRequiredHeader(declaration),
     "Cache-Control": "no-store",
     "Access-Control-Expose-Headers": "PAYMENT-REQUIRED,PAYMENT-RESPONSE,X-PAYMENT-RESPONSE",
   });
   if (demo) headers.set("X-MPP-Demo-Mode", "x402");
-  return Response.json({ ...declaration, ...(demo ? { demo: true } : {}) }, { status: 402, headers });
+  return Response.json(
+    { ...declaration, ...(demo ? { demo: true, ...(demoReason ? { demoReason } : {}) } : {}) },
+    { status: 402, headers },
+  );
 }
 
 /**
@@ -242,14 +245,17 @@ async function handlePayment(request: Request): Promise<Response> {
     // No facilitator, so no `feePayer` to advertise: the offer is well-formed and inspectable
     // but not payable, which is what demo mode means on every other rail too.
     const declaration = paymentRequired(request, product, {}, "payment is required");
+    const reason = capability.live ? "the facilitator cannot settle yet" : capability.reason;
     const wantsHtml = request.headers.get("Accept")?.includes("text/html") ?? false;
     if (wantsHtml) {
-      const reason = capability.live ? "the facilitator cannot settle yet" : capability.reason;
       const headers = new Headers({ "X-MPP-Demo-Mode": "x402", "Cache-Control": "no-store" });
       headers.set("PAYMENT-REQUIRED", encodePaymentRequiredHeader(declaration));
       return renderX402DemoPanel(product, reason, headers);
     }
-    return challengeResponse(declaration, true);
+    // Carry the reason in the JSON too. Without it a caller only learns the rail is in demo
+    // mode, and the obvious guess — "the facilitator URL is unset" — is wrong whenever the
+    // probe failed for any other cause.
+    return challengeResponse(declaration, true, reason);
   }
 
   const extra = capability.live ? capability.extra : {};

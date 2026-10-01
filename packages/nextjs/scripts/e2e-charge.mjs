@@ -61,6 +61,11 @@ const client = Client.forTestnet();
 client.setOperator(AccountId.fromString(payer), key);
 
 const have = bal(account, tokenId);
+// Say so when step 5 is skipped. A silent jump from "4." to "6." reads as a step that failed
+// quietly, and the README spends a paragraph teaching you how to read step 5's output.
+if (have !== null && have >= amount) {
+  console.log("5. fund: skipped — buyer already holds", String(have), "of", tokenId);
+}
 if (have === null || have < amount) {
   const associate =
     have === null

@@ -115,7 +115,8 @@ function mppSecretKey(): string {
   if (production && !secure) {
     throw new Error(
       "MPP_SECRET_KEY must be set to a private value of 32+ bytes on mainnet or with a live Stripe key " +
-        "(generate one with `openssl rand -base64 32`). Refusing to start with the insecure default.",
+        "(generate one with `openssl rand -base64 32`). Refusing to serve a paid route with the insecure " +
+        "dev default — the process itself stays up, and every unpaid route keeps working.",
     );
   }
   return configured || INSECURE_DEV_SECRET_KEY;

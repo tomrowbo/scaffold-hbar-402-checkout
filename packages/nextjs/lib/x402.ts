@@ -89,16 +89,46 @@ async function probeFacilitator(): Promise<X402Capability> {
   }
 }
 
-let capability: Promise<X402Capability> | null = null;
+let cached: { value: X402Capability; at: number } | null = null;
+let inFlight: Promise<X402Capability> | null = null;
 
 /**
- * Whether the configured facilitator supports `exact` on Hedera. Probed on first use and
- * memoized for the life of the process — not a top-level `await`, which would stall module
- * evaluation for anything importing this file. Always resolves, never rejects.
+ * How long a *failed* probe is trusted before the next request re-asks. A success is kept for
+ * the life of the process; a failure must not be, which is what this constant is for.
+ *
+ * The probe has a 3s budget on the request path, and the first request to this route is also
+ * the one that waits out the cold webpack compile in `yarn next:dev`. On a loaded machine the
+ * event loop can be starved past 3s even though the facilitator answers in well under a
+ * second — so the first probe can lose a race it would normally win by a wide margin. Caching
+ * that permanently left a correctly configured rail dead until the process restarted, while
+ * the UI told the operator to set a variable that was already set.
+ */
+const FAILED_PROBE_TTL_MS = 30_000;
+
+/**
+ * Whether the configured facilitator supports `exact` on Hedera. Probed on first use, not at
+ * module scope — a top-level `await` would stall module evaluation for anything importing
+ * this file. Always resolves, never rejects.
+ *
+ * A live result is memoized for the life of the process. A failure is retried after
+ * `FAILED_PROBE_TTL_MS`, so a third party that was briefly slow does not disable the rail
+ * permanently. Concurrent callers share one in-flight probe either way.
  */
 export function x402Capability(): Promise<X402Capability> {
-  capability ??= probeFacilitator();
-  return capability;
+  if (cached && (cached.value.live || Date.now() - cached.at < FAILED_PROBE_TTL_MS)) {
+    return Promise.resolve(cached.value);
+  }
+  inFlight ??= probeFacilitator().then(value => {
+    cached = { value, at: Date.now() };
+    inFlight = null;
+    return value;
+  });
+  return inFlight;
+}
+
+/** The probe's last verdict, for error messages that would otherwise misdirect. */
+export function x402LastProbeReason(): string | null {
+  return cached && !cached.value.live ? cached.value.reason : null;
 }
 
 /** The one question route code should ask: configured, and the facilitator can settle Hedera. */

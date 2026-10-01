@@ -69,9 +69,20 @@ console.log(`account   ${accountId ?? "(not indexed yet — check the Mirror Nod
 console.log(`evm       ${evmAddress}`);
 console.log(`hbar      ${HBAR_AMOUNT}`);
 console.log(`key       ${burner.toStringRaw()}`);
+// Follow E2E_ORIGIN like the e2e scripts do. These lines are meant to be pasted, and one of
+// them pastes a private key into a browser console — naming the wrong port tells the reader
+// to hand that key to whatever else is listening on 3000.
+const origin = process.env.E2E_ORIGIN ?? "http://localhost:3000";
+const originPrefix = origin === "http://localhost:3000" ? "" : `E2E_ORIGIN=${origin} `;
+
 console.log("");
 console.log("Pay with it from the command line:");
-console.log(`  yarn e2e:charge ${burner.toStringRaw()} hashgraph-mug`);
+console.log(`  ${originPrefix}yarn e2e:charge ${burner.toStringRaw()} hashgraph-mug`);
 console.log("");
-console.log("Or in the browser, from the DevTools console on http://localhost:3000:");
+console.log(`Or in the browser, from the DevTools console on ${origin}:`);
 console.log(`  localStorage.setItem("burnerWallet.pk", "0x${burner.toStringRaw()}"); location.reload();`);
+if (!process.env.E2E_ORIGIN) {
+  console.log("");
+  console.log("  (Server on another port? Re-run with E2E_ORIGIN=http://localhost:<port> to");
+  console.log("   print commands that point at it.)");
+}

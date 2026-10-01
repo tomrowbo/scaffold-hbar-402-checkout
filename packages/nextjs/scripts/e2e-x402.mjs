@@ -66,13 +66,29 @@ if (!/^\d+\.\d+\.\d+$/.test(offer.payTo ?? "")) {
   process.exit(1);
 }
 if (challenge.headers.get("X-MPP-Demo-Mode")) {
-  console.error("   server is in x402 demo mode — set AX402_FACILITATOR_URL and restart it");
+  // The server knows why; printing a guess here sent an earlier reader off to check a
+  // variable that was already set.
+  console.error(`   server is in x402 demo mode: ${declared.demoReason ?? "no reason given"}`);
+  console.error("   if AX402_FACILITATOR_URL is set and the facilitator is up, the probe may have");
+  console.error("   lost a race on a cold start — retry in 30s, which is when it re-probes.");
   process.exit(1);
 }
 
 // 3. Resolve the buyer from its EVM alias, and make sure it can cover the offer.
 const key = PrivateKey.fromStringECDSA(BUYER_PK.replace(/^0x/, ""));
-let account = await look(`0x${key.publicKey.toEvmAddress()}`);
+// A key with no account on testnet is a plausible first-timer mistake — say so instead of
+// letting a raw `mirror 404 for 0x…` stack trace be the whole explanation.
+let account;
+try {
+  account = await look(`0x${key.publicKey.toEvmAddress()}`);
+} catch (error) {
+  if (String(error.message).includes("404")) {
+    console.error(`\n\u2717 no testnet account exists for this key (EVM alias 0x${key.publicKey.toEvmAddress()}).`);
+    console.error("  Run `yarn make:burner` and pay with the key it prints.");
+    process.exit(1);
+  }
+  throw error;
+}
 const payer = account.account;
 console.log("3. buyer:", payer, "usdc:", String(bal(account, offer.asset)));
 

@@ -103,11 +103,13 @@ Three things to expect on a first run, none of them a problem:
   a fresh install prints `YN0009: sharp couldn't be built successfully`, because sharp
   falls back to compiling from source wherever it has no prebuilt binary.
 - The dev server prints `Ready in ~2.5s` and *then* compiles the first page you open, which
-  takes about **30 seconds** (`✓ Compiled / in 30.4s (11154 modules)`).
-- **Every route is slow on its first visit** — `/`, `/checkout` *and* `/receipt/[id]`, 10–30s
-  each — and while a route compiles the browser shows a white page with a small spinner in
-  the middle of it. It reads as a broken app rather than a slow one. It is not; the page
-  appears when compilation finishes and every later load is instant.
+  takes **30–60 seconds** (`✓ Compiled / in 55.6s (11154 modules)` on a loaded laptop).
+- **Every route is slow on its first visit** — `/`, `/checkout` *and* `/receipt/[id]`, and
+  `/checkout` is the worst at up to two minutes cold, because it pulls the wallet stack.
+  While a route compiles the browser shows a white page with a small spinner in the middle of
+  it. It reads as a broken app rather than a slow one. It is not; the page appears when
+  compilation finishes and every later load is instant. If you only want to look at the
+  store, `yarn next:build && yarn next:serve` has none of this.
 
 That is the whole setup. Open <http://localhost:3000>, pick an item, and walk through
 checkout. `/`, `/checkout` and `/receipt/[id]` all render; every payment control shows a
@@ -682,9 +684,31 @@ for one `next start` process; swap `orderStore()` for Redis, Postgres or mppx's
 
 ## Paying as an agent
 
-The endpoint is built for programmatic buyers, and paying it from Node is about 30 lines.
-[`AGENTS.md`](AGENTS.md) has a runnable script: request the challenge, sign the USDC
-transfer, retry with the credential, read the receipt.
+An agent that has never seen this store can discover it from two conventional URLs, before it
+knows anything about the catalogue:
+
+```console
+$ curl -s http://localhost:3000/llms.txt | head -3
+# 402 Checkout (demo store)
+...
+
+$ curl -s http://localhost:3000/openapi.json | jq '.paths | keys'
+["/api/pay","/api/x402"]
+```
+
+- **`/llms.txt`** — a plain-text briefing in the [llms.txt](https://llmstxt.org) convention:
+  what the store sells, which rails it accepts, which token and network, and how to pay.
+- **`/openapi.json`** — OpenAPI 3.1 describing both payment endpoints, their `402` responses
+  and their receipt bodies.
+
+Both are served by route handlers at `/api/llms` and `/api/openapi`, rewritten to the
+conventional dot-bearing paths in `next.config.ts` (Next's app router drops route segments
+named like a metadata file, so the handlers cannot live at those paths directly). Both answer
+with no credentials set, and both report demo mode honestly rather than advertising a rail
+that cannot settle.
+
+Paying it is about 30 lines. [`AGENTS.md`](AGENTS.md) has a runnable script: request the
+challenge, sign the USDC transfer, retry with the credential, read the receipt.
 
 ## Scripts
 
@@ -692,7 +716,7 @@ transfer, retry with the credential, read the receipt.
 |---|---|
 | `yarn install` | Install (Yarn 3.2.3; this template is Yarn-only) |
 | `yarn next:dev` | Dev server at <http://localhost:3000> |
-| `yarn next:build` | Production build (about 3 minutes from cold) |
+| `yarn next:build` | Production build (about 70s from cold on a quiet machine) |
 | `yarn next:serve` | Serve the production build (`next start`). **This is the one to use for a production smoke test** — `yarn next:dev` is not it |
 | `yarn next:check-types` | TypeScript check |
 | `yarn lint` | ESLint (prints a `next lint is deprecated` banner on Next 15; harmless) |
