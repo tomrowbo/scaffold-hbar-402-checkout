@@ -39,7 +39,7 @@
     "daisyui": "^5.0.9",
     "ethers": "^6.16.0",
     "mppx": "0.10.1",
-    "mppx-hedera": "0.2.2",
+    "mppx-hedera": "^0.3.0",
     "next": "^15.2.8",
     "next-nprogress-bar": "^2.3.13",
     "next-themes": "^0.3.0",

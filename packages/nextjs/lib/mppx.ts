@@ -32,17 +32,27 @@ import Stripe from "stripe";
  * Production switch: `HEDERA_NETWORK=mainnet`. Token id and Mirror Node follow it, so the
  * charge, the settlement check and the Hashscan links always agree on the network.
  *
- * Testnet USDC is `0.0.5449`: `mppx-hedera` resolves this same id from the chain id, and it
- * is the token the documented operator actually holds. `0.0.429274` is a different testnet
- * token sharing the name and symbol — charges against it are unverifiable here.
+ * Testnet USDC is Circle's `0.0.429274` — the token `faucet.circle.com` dispenses when you
+ * pick Hedera Testnet, so a newcomer can obtain some in one click. Hedera testnet also
+ * carries `0.0.5449`, which shares the name, symbol and decimals and differs only in its
+ * treasury. That one has no faucet but deep SaucerSwap liquidity, so it is the better choice
+ * if you need a lot of it; Circle's faucet rate-limits to one drop every couple of hours.
+ * `HEDERA_USDC_TOKEN_ID` switches between them without touching code.
  */
 const NETWORK_CONFIG = {
-  testnet: { usdcTokenId: "0.0.5449", mirrorNodeUrl: "https://testnet.mirrornode.hedera.com" },
+  testnet: { usdcTokenId: "0.0.429274", mirrorNodeUrl: "https://testnet.mirrornode.hedera.com" },
   mainnet: { usdcTokenId: "0.0.456858", mirrorNodeUrl: "https://mainnet.mirrornode.hedera.com" },
 } as const;
 
 export const HEDERA_NETWORK = resolvedNetwork();
-export const USDC_TOKEN_ID = NETWORK_CONFIG[HEDERA_NETWORK].usdcTokenId;
+/**
+ * Settle a different HTS token by setting `HEDERA_USDC_TOKEN_ID`. It travels in the 402 as
+ * `currency` and `mppx-hedera` >= 0.3.0 verifies against whatever the challenge advertised —
+ * before that it ignored the override and checked the network default, so a configured token
+ * was advertised and then never found.
+ */
+const configuredTokenId = process.env.HEDERA_USDC_TOKEN_ID?.trim();
+export const USDC_TOKEN_ID = configuredTokenId || NETWORK_CONFIG[HEDERA_NETWORK].usdcTokenId;
 export const USDC_DECIMALS = 6;
 export const MIRROR_NODE_URL = NETWORK_CONFIG[HEDERA_NETWORK].mirrorNodeUrl;
 

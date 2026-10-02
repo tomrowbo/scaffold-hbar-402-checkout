@@ -166,12 +166,47 @@ is `0.0.0` and `networkId` is `demo` because nothing is configured yet —
 `x-mpp-demo-mode: hedera,stripe` says exactly which rails are stubbed. Configure a rail and
 its half of this header becomes real, independently of the other.
 
-## Getting testnet USDC (`0.0.5449`)
+## Getting testnet USDC
 
-**This is why the catalogue is priced in cents.** Nothing on the store costs more than
-$2.00, because `0.0.5449` has no faucet and you have to swap HBAR for it. At these prices a
-couple of USDC covers dozens of runs across all three rails; priced like real merch, the
-same balance buys one purchase and then refuses. Change `priceUsd` in
+This template settles **Circle's testnet USDC, `0.0.429274`** — the token
+[faucet.circle.com](https://faucet.circle.com) dispenses when you pick Hedera Testnet. One
+click and the operator has a balance.
+
+**Two traps on the way, both of which will look like the faucet silently doing nothing.**
+
+1. **Your account probably cannot receive the token yet.** On Hedera an account must be
+   associated with an HTS token before it can hold any, and an account that was auto-created
+   by receiving HBAR to an alias — which is most wallet accounts — starts with zero
+   auto-association slots. The faucet then has nowhere to deliver and you see no error.
+   Either associate `0.0.429274` first, or send the faucet to an account with
+   `max_automatic_token_associations: -1`, which associates on arrival. Check with:
+
+   ```bash
+   curl -s https://testnet.mirrornode.hedera.com/api/v1/accounts/0.0.YOURID \
+     | jq '.max_automatic_token_associations'
+   ```
+
+   `-1` means you are fine. `0` means associate first. Accounts this template creates with
+   `yarn make:burner` are always `-1`.
+
+2. **Circle rate-limits to one drop every couple of hours.** If you need more than that,
+   there is a second testnet USDC — `0.0.5449` — which shares the name, symbol and decimals
+   and differs only in its treasury (`0.0.3923` rather than Circle's `0.0.5176`). It has no
+   faucet at all, but it has deep SaucerSwap liquidity, so you can swap Portal HBAR for as
+   much as you like on [testnet.saucerswap.finance](https://testnet.saucerswap.finance)
+   (USDC/HBAR, pool 3). Point the store at it with `HEDERA_USDC_TOKEN_ID=0.0.5449` — no code
+   change, and `mppx-hedera` verifies against whatever the challenge advertises.
+
+> **A note on the transcripts below.** Everything captured in this README was recorded with
+> `HEDERA_USDC_TOKEN_ID=0.0.5449`, so that is the token you will see in the `402` challenges,
+> the receipts and the Mirror Node lookups. The flow is identical on Circle's `0.0.429274` —
+> the token id is the only thing that differs — but these are real captured output and are
+> left as they were recorded rather than edited to show a run that did not happen.
+
+**This is also why the catalogue is priced in cents.** Nothing costs more than $2.00, so a
+single faucet drop covers dozens of runs across all three rails — and because each purchase
+returns the USDC to the merchant, you effectively never run out. Priced like real merch, one
+drop buys one item and then refuses. Change `priceUsd` in
 `packages/nextjs/lib/products.ts` when you fork this — but keep everything at or above
 `0.50`, which is Stripe's minimum charge. Below it mppx stops advertising the card rail
 instead of failing visibly.
