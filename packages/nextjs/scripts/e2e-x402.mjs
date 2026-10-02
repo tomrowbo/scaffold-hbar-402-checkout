@@ -17,8 +17,7 @@ import { ExactHederaScheme } from "@x402/hedera/exact/client";
 
 const MIRROR = "https://testnet.mirrornode.hedera.com";
 const ORIGIN = process.env.E2E_ORIGIN?.trim() || "http://127.0.0.1:3000";
-const BUYER_PK =
-  process.argv[2] ?? process.env.HEDERA_BUYER_KEY?.trim() ?? process.env.X402_BUYER_KEY?.trim();
+const BUYER_PK = process.argv[2] ?? process.env.HEDERA_BUYER_KEY?.trim() ?? process.env.X402_BUYER_KEY?.trim();
 const PRODUCT = process.argv[3] ?? "hashgraph-mug";
 const ENDPOINT = `${ORIGIN}/api/x402?product=${PRODUCT}`;
 

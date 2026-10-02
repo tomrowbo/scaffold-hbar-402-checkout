@@ -95,7 +95,7 @@ export const HederaPayButton = ({ productId, priceUsd, enabled }: HederaPayButto
         data-testid="pay-with-hedera"
       >
         {working ? <span className="loading loading-spinner loading-xs" /> : null}
-        Pay {priceUsd} USDC on Hedera
+        Pay {priceUsd} USDC via Hedera MPP
       </button>
 
       {enabled && !hasSigner && (

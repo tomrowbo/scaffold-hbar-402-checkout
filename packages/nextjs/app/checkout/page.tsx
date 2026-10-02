@@ -33,7 +33,10 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
       action: <CardPayButton productId={product.id} priceUsd={product.priceUsd} enabled={cardEnabled} />,
     },
     {
-      label: "Hedera",
+      // Labelled by protocol, to sit against x402. The card offer rides the same MPP 402, so
+      // the distinction a buyer is choosing between here is really the rail, not the protocol
+      // — the description carries that.
+      label: "Hedera MPP",
       description: `Native USDC (${USDC_TOKEN_ID}) transfer on Hedera.`,
       envVars: ["HEDERA_OPERATOR_ID", "HEDERA_OPERATOR_KEY"],
       enabled: hederaEnabled,
