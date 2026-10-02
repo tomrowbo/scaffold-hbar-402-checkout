@@ -66,6 +66,20 @@ function escapeHtml(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+/**
+ * How long a challenge stays payable. mppx defaults to five minutes, which is fine for an
+ * agent — request, sign, retry, done in under a second — and much too short for a human: the
+ * card form on this route is Stripe Elements plus an Onelink panel, and anyone reading the
+ * page, picking a card and confirming it can easily spend longer than that. When it lapses
+ * the form disables its own Pay button, so the failure looks like a dead button rather than
+ * an expired offer.
+ *
+ * Fifteen minutes is the compromise. The challenge is still bounded and still HMAC-bound to
+ * this route and amount, and a settled credential is idempotent, so the cost of a longer
+ * window is only that an unpaid offer stays open longer.
+ */
+const CHALLENGE_TTL_MS = 15 * 60 * 1000;
+
 /** The three variables that switch the card rail on, per `hasStripe()` in `lib/demo.ts`. */
 const STRIPE_ENV_VARS = ["STRIPE_SECRET_KEY", "STRIPE_PUBLISHABLE_KEY", "STRIPE_NETWORK_ID"];
 
@@ -140,6 +154,7 @@ async function handlePayment(request: Request): Promise<Response> {
       decimals: USDC_DECIMALS,
       recipient: chargeRecipient(),
       description: `402 Checkout — ${product.name}`,
+      expires: new Date(Date.now() + CHALLENGE_TTL_MS),
       meta: { product: product.id, amountUsd: product.priceUsd },
     })(stripCredential ? withoutCredential(request) : request);
   } catch (error) {

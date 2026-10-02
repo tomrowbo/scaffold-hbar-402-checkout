@@ -365,6 +365,12 @@ export type ChargeOptions = {
   decimals: number;
   recipient: string;
   description?: string;
+  /**
+   * When the challenge stops being payable. Passed through to both offers so the card and the
+   * Hedera challenge expire together — mppx's own default is five minutes, which is short for
+   * a human filling in a card form. The route sets it; see CHALLENGE_TTL_MS there.
+   */
+  expires?: Date;
   /** Server-defined correlation data, serialized into the challenge as `opaque`. */
   meta?: Record<string, string>;
 };
@@ -403,6 +409,11 @@ function composeCharge(instance: MppxInstance, options: ChargeOptions): Discover
         currency: STRIPE_CURRENCY,
         decimals: STRIPE_DECIMALS,
         description: options.description,
+        // The card offer builds its own options, so anything added to ChargeOptions has to be
+        // forwarded here too or the two halves of one challenge disagree. `expires` is the
+        // case that matters: the card form is the slow one to fill in, so leaving it on
+        // mppx's five-minute default was exactly backwards.
+        expires: options.expires,
         meta: options.meta,
       },
     ],
