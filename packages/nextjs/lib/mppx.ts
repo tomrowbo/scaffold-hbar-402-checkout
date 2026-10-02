@@ -202,7 +202,16 @@ const RECEIPT_STATUS_CAUSES: Record<string, string> = {
  * account can retry the same challenge.
  */
 function asPaymentError(error: unknown): unknown {
-  if (error instanceof Errors.PaymentError) return error;
+  if (error instanceof Errors.PaymentError) {
+    // mppx-hedera raises its own named error for a failing receipt, which used to mean the
+    // status map below never ran and the buyer saw the raw enum. Enrich it in place when the
+    // reason names a status we can explain, and leave it untouched otherwise.
+    const named = Object.keys(RECEIPT_STATUS_CAUSES).find(code => error.message.includes(code));
+    if (!named) return error;
+    return new Errors.VerificationFailedError({
+      reason: `the Hedera network rejected the transfer with ${named} — ${RECEIPT_STATUS_CAUSES[named]}`,
+    });
+  }
 
   const receipt = error as { status?: { toString(): string }; transactionId?: { toString(): string } } | null;
   const status = receipt?.status?.toString();

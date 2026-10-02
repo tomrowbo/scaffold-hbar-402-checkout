@@ -113,11 +113,22 @@ export async function payWithHedera({ productId, wallet, onProgress }: PayWithHe
   });
 
   if (settledResponse.status !== 200) {
-    const detail = await settledResponse.text();
-    throw new HederaChargeError(
-      `The server did not accept the payment (HTTP ${settledResponse.status}).`,
-      detail.slice(0, 300),
-    );
+    // The body is an RFC 9457 problem document, and `detail` is the sentence written for a
+    // human. Showing the raw JSON instead put a `type` URI, a title and a challenge id in
+    // front of the one line that says what went wrong.
+    const body = await settledResponse.text();
+    let detail = body.slice(0, 300);
+    try {
+      const problem = JSON.parse(body) as { detail?: unknown; title?: unknown };
+      const text = typeof problem.detail === "string" ? problem.detail : problem.title;
+      if (typeof text === "string" && text.trim()) {
+        const stripped = text.replace(/^Payment verification failed:\s*/i, "").trim();
+        detail = stripped.charAt(0).toUpperCase() + stripped.slice(1);
+      }
+    } catch {
+      // Not JSON — the truncated body is the best we have.
+    }
+    throw new HederaChargeError(detail, "Nothing was charged. The payment was not accepted.");
   }
 
   return (await settledResponse.json()) as ChargeSuccess;
