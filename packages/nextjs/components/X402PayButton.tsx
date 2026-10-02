@@ -75,9 +75,15 @@ export const X402PayButton = ({ productId, priceUsd, enabled }: X402PayButtonPro
         Pay {priceUsd} USDC via x402
       </button>
 
+      {/* Only rendered when the facilitator IS configured — `enabled` is `hasX402()`. An
+          unconfigured facilitator shows the rail as `demo mode` instead, so this is never
+          about the facilitator: it is the buyer having no signer in this browser. Nothing
+          else is needed either; the facilitator sponsors the fees and `/api/testnet/fund`
+          tops the buyer up during the payment. */}
       {enabled && !burnerAvailable && (
         <p className="text-xs text-base-content/60 m-0">
-          Needs a local key — run <code className="bg-base-300 px-1 py-0.5 rounded text-[11px]">yarn make:burner</code>.
+          Needs a signing key in this browser — run{" "}
+          <code className="bg-base-300 px-1 py-0.5 rounded text-[11px]">yarn make:burner</code>.
         </p>
       )}
 

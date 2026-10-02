@@ -32,15 +32,15 @@ It boots with **no `.env` file and no environment variables at all**. Each rail 
 itself on independently once its own variables are present, so a developer holding only
 Stripe keys gets a live card path and honest demo stubs everywhere else.
 
-![The storefront: four products, and a status tile per rail](docs/images/store.jpg)
+![The storefront: four products priced in cents](docs/images/store.jpg)
 
-Every rail reads its own credentials, so each tile above flips independently. Checkout shows
-the same three side by side, all answering the one `402`:
+Checkout offers all three rails against the one order, each reading its own credentials and
+each answering the same `402`:
 
 ![Checkout: Card, Hedera and x402 offered against the same $2.00 order](docs/images/checkout.jpg)
 
-Both screenshots are the template with all three rails configured. Out of the box every tile
-reads `Demo mode` instead, and the store still runs.
+That screenshot is the template with all three rails configured. Out of the box each card
+reads `demo mode` and names the variables that switch it on, and the store still runs.
 
 ## Create a project
 
