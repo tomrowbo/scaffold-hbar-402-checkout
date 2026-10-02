@@ -27,7 +27,7 @@ import {
   readBurnerKey,
   toBase64,
 } from "./hederaBuyer";
-import { AccountId, Client, TokenId, type Transaction, TransferTransaction } from "@hiero-ledger/sdk";
+import { AccountId, Client, TokenId, type Transaction, TransactionId, TransferTransaction } from "@hiero-ledger/sdk";
 import { Challenge, Credential } from "mppx";
 import { Attribution } from "mppx-hedera";
 
@@ -197,9 +197,17 @@ function buildTransfer({
   }
   const token = TokenId.fromString(tokenId);
   const units = Number(amount);
-  return new TransferTransaction()
-    .addTokenTransfer(token, AccountId.fromString(payer), -units)
-    .addTokenTransfer(token, AccountId.fromString(request.recipient), units)
-    .setTransactionMemo(memo)
-    .freezeWith(client);
+  return (
+    new TransferTransaction()
+      .addTokenTransfer(token, AccountId.fromString(payer), -units)
+      .addTokenTransfer(token, AccountId.fromString(request.recipient), units)
+      .setTransactionMemo(memo)
+      // Name the transaction id explicitly rather than letting `freezeWith` derive it from
+      // the client's operator. The burner path sets an operator, but the wallet path cannot —
+      // the key lives in the wallet — so freezing there failed with the SDK's own
+      // "`transactionId` must be set or `client` must be provided" before any balance was
+      // checked, which made every wallet payment look like a funding problem.
+      .setTransactionId(TransactionId.generate(AccountId.fromString(payer)))
+      .freezeWith(client)
+  );
 }

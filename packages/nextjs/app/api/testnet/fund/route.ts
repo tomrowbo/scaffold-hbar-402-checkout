@@ -44,17 +44,26 @@ function catalogueMaxBaseUnits(): number {
 }
 
 /**
- * Where a developer actually gets testnet `0.0.5449`. There is no faucet for it:
- * `faucet.circle.com` hands out `0.0.429274`, a different testnet USDC that `mppx-hedera`
- * pins neither in its challenge nor in its Mirror Node check, so charges against it cannot
- * be verified here. Swapping portal HBAR on SaucerSwap's testnet deployment is the one
- * self-service route that yields this exact token. Kept in one place so this route, the
- * browser panel and the README cannot drift apart.
+ * Where a developer actually gets the token this store settles. The advice differs per token
+ * and getting it wrong wastes real time, so it is derived rather than written out:
+ * `0.0.429274` is Circle's and comes from their faucet; `0.0.5449` has no faucet at all but
+ * deep SaucerSwap liquidity. Pointing someone at the wrong one of those two sends them to a
+ * DEX with no pool, or to a faucet that will not serve the token they need.
+ *
+ * Kept in one place so this route, the browser panel and the README cannot drift apart.
  */
+const CIRCLE_TESTNET_USDC = "0.0.429274";
 const FUNDING_HELP =
-  `Get testnet HBAR from https://portal.hedera.com/faucet and swap it for token ${USDC_TOKEN_ID} on ` +
-  `https://testnet.saucerswap.finance (the USDC/HBAR pool). Circle's faucet at https://faucet.circle.com ` +
-  `dispenses 0.0.429274 instead, a different testnet USDC this template cannot verify.`;
+  USDC_TOKEN_ID === CIRCLE_TESTNET_USDC
+    ? `Get ${USDC_TOKEN_ID} from https://faucet.circle.com — pick Hedera Testnet and send it to the ` +
+      `operator account. The operator must be able to receive the token: an account with ` +
+      `max_automatic_token_associations of 0 has to associate it first. Circle rate-limits repeat ` +
+      `requests, so if you need more, set HEDERA_USDC_TOKEN_ID=0.0.5449 and swap portal HBAR for that ` +
+      `token on https://testnet.saucerswap.finance instead.`
+    : `No faucet dispenses ${USDC_TOKEN_ID}. Get testnet HBAR from https://portal.hedera.com/faucet and ` +
+      `swap it for the token on https://testnet.saucerswap.finance (the USDC/HBAR pool). Circle's faucet ` +
+      `at https://faucet.circle.com dispenses ${CIRCLE_TESTNET_USDC} instead — unset HEDERA_USDC_TOKEN_ID ` +
+      `to settle that one and use their faucet directly.`;
 
 /**
  * Current USDC balance per the Mirror Node. Indexing lags consensus, so a fresh top-up may
