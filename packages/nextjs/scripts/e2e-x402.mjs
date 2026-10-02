@@ -148,13 +148,15 @@ if (have === null || have < amount) {
 const signer = await createClientHederaSigner(payer, key, { network: NETWORK });
 const client = new x402Client();
 client.register("hedera:*", new ExactHederaScheme(signer));
-// Two client-side spend controls would otherwise reject this offer, and both are the buyer's
-// policy rather than anything the server got wrong:
-//   - @x402/hedera's only "default asset" on testnet is 0.0.429274. This store charges in
-//     0.0.5449 (see lib/mppx.ts for why), so the buyer has to allow that token explicitly.
-//   - the default per-payment cap is $1, well under the catalogue's prices.
-// Allowing exactly the offered token, capped at exactly the offered amount, opts into this one
-// purchase and nothing more.
+// A client-side spend control, and the buyer's policy rather than anything the server got
+// wrong: @x402/core caps a single payment at $1 by default and the catalogue's dearest item is
+// above that, so the cap has to be raised to take this offer. Allowing exactly the offered
+// token at exactly the offered amount opts into this one purchase and nothing wider.
+//
+// The asset half of this used to be load-bearing too: the store settled 0.0.5449 while
+// @x402/hedera's only default testnet asset is 0.0.429274, so the client rejected the offer
+// before any network call. The store settles 0.0.429274 now, so that no longer applies —
+// unless you point HEDERA_USDC_TOKEN_ID somewhere else, in which case it does again.
 client.setSpendControls({
   allowedAssets: [{ network: offer.network, asset: offer.asset, maxAmountPerPayment: offer.amount }],
 });

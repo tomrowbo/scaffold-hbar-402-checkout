@@ -112,6 +112,13 @@ export async function payWithX402({ productId, onProgress }: PayWithX402Options)
     "hedera:*",
     new ExactHederaScheme(createClientHederaSigner(payer, signerKey, { network: X402_NETWORK })),
   );
+  // The buyer's own spend controls, not something the server asked for. @x402/core caps a
+  // single payment at $1 by default, and the catalogue goes above that, so the cap has to be
+  // raised to take this offer. Scoping it to exactly the offered asset and amount opts into
+  // this one purchase and nothing wider.
+  //
+  // Until the store moved to @x402/hedera's own default testnet token (0.0.429274) the
+  // `allowedAssets` entry was also load-bearing: the client refused any other asset outright.
   client.setSpendControls({
     allowedAssets: [{ network: offer.network, asset: offer.asset, maxAmountPerPayment: offer.amount }],
   });
