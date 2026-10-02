@@ -411,9 +411,25 @@ key       c97af255da1f636cbaf42b0cafca93f492f04cc9ed117b1c1678a9cfe7580763
 Pay with it from the command line:
   yarn e2e:charge c97af255da1f636cbaf42b0cafca93f492f04cc9ed117b1c1678a9cfe7580763 hashgraph-mug
 
-Or in the browser, from the DevTools console on http://localhost:3000:
+Or pay in the browser. Open the store, then paste this into the DevTools console
+ON THE PAGE ITSELF — the key is stored per origin, so it has to be the same host
+you are browsing:
+
   localStorage.setItem("burnerWallet.pk", "0xc97af255da1f636cbaf42b0cafca93f492f04cc9ed117b1c1678a9cfe7580763"); location.reload();
+
+  Works on http://localhost:3000 or http://127.0.0.1:3000 — but only the one you paste it on.
 ```
+
+> **`localhost` and `127.0.0.1` are different origins.** The browser partitions
+> `localStorage` by origin, and those two are separate origins even on the same port. A key
+> pasted on one is invisible on the other, and the checkout then reports that it has no
+> signing key — so the x402 rail, and the Hedera rail without a connected wallet, both sit
+> disabled with no clue as to why. There is no way around this from the page: it is the
+> browser's security model, not something the template can opt out of. Pick one host and
+> stay on it, or paste the key on both.
+>
+> It bites hardest when something else sends you to the other spelling — a bookmark, a
+> terminal link, Next printing `http://localhost:3399` while you had `127.0.0.1` open.
 
 It still holds no USDC. That is what `/api/testnet/fund` is for.
 

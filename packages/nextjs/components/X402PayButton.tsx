@@ -82,8 +82,10 @@ export const X402PayButton = ({ productId, priceUsd, enabled }: X402PayButtonPro
           tops the buyer up during the payment. */}
       {enabled && !burnerAvailable && (
         <p className="text-xs text-base-content/60 m-0">
-          Needs a signing key in this browser — run{" "}
-          <code className="bg-base-300 px-1 py-0.5 rounded text-[11px]">yarn make:burner</code>.
+          Needs a signing key on <span className="font-semibold">this host</span> — run{" "}
+          <code className="bg-base-300 px-1 py-0.5 rounded text-[11px]">yarn make:burner</code>. A key set on{" "}
+          <code className="bg-base-300 px-1 py-0.5 rounded text-[11px]">localhost</code> is not visible on{" "}
+          <code className="bg-base-300 px-1 py-0.5 rounded text-[11px]">127.0.0.1</code>.
         </p>
       )}
 
