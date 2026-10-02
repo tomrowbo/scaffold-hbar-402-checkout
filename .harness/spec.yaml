@@ -40,8 +40,12 @@ chainValidation:
   fundingHbar: 10
   sweepBack: true
   expose:
-    browserLocalStorageKey: burnerWallet.pk
-    envVars: []
+    # The checkout signs with a connected wallet, so nothing in the page reads a key and a
+    # browserLocalStorageKey would be injected into a browser that ignores it. The funded
+    # signer goes to the `yarn e2e:*` scripts instead, which sign with it directly and
+    # produce the on-chain transaction this stage exists to evidence.
+    envVars:
+      - HEDERA_BUYER_KEY
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Everything below is the harness default. Uncomment only to override.

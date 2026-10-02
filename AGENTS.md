@@ -85,7 +85,7 @@ packages/nextjs/
 
 **x402 is a separate protocol, not an MPP method.** It never goes into the `methods` array in `lib/mppx.ts` and never touches `/api/pay`. `/api/x402` reuses `chargeRecipient()`, `USDC_TOKEN_ID` and `USDC_DECIMALS` from `lib/mppx.ts` so the protocol envelope is the only difference between the two endpoints; keep it that way. `hasX402()` stays a synchronous env check — the network question ("does the facilitator list `exact` on `hedera:testnet`?") lives in `lib/x402.ts`'s `x402Capability()`, probed with a 3s timeout and never throwing; a live result is memoized for the process, a failed one is retried after 30s so a briefly slow facilitator cannot disable the rail permanently. Route code calls `canSettleX402()`. The network id is `hedera:testnet`, never `eip155:296`. Three v2 details are load-bearing and easy to regress: the declaration a client parses is the base64 `PAYMENT-REQUIRED` **header** (`@x402/core` only falls back to the body for v1); the offer field is `amount`, not v1's `maxAmountRequired`, with `resource` as a top-level object; and `accepts[].extra.feePayer` must be copied from the matching `/supported` kind, because `@x402/hedera`'s client signer refuses to build a transaction without it. Settlement runs `POST /verify` then `POST /settle` against the facilitator and returns `PAYMENT-RESPONSE`. A settled x402 payment is recorded through `recordX402Order()` in `lib/orders.ts`, which mints an `x402_…` id because x402 has no challenge id to key on, and `/receipt/[id]` renders it like any other order. The `PAYMENT-RESPONSE` header carries the facilitator's own receipt alongside it. `yarn e2e:x402 <buyer-key>` proves the rail with the official client.
 
-**Wallet + identity:** `useHederaSigner` wraps connection state and `requireProvider()` for mutations. Account IDs use `0.0.xxxxx` form; helpers in `utils/scaffold-hbar/hederaIdentity.ts` normalize EVM ↔ native identity. The burner connector must keep working — on-chain validation injects a key at `localStorage.burnerWallet.pk`.
+**Wallet + identity:** `useHederaSigner` wraps connection state and `requireProvider()` for mutations. Account IDs use `0.0.xxxxx` form; helpers in `utils/scaffold-hbar/hederaIdentity.ts` normalize EVM ↔ native identity. Both on-chain rails sign with the connected wallet and the page holds no key. x402 needs `hedera_signTransaction` specifically — signed bytes, not submitted, because the facilitator is the fee payer named in the transaction id — which `lib/x402WalletSigner.ts` wraps as `@x402/hedera`'s `ClientHederaSigner`. Do not reach for `hedera_signAndExecuteTransaction` there; it submits, and the settlement is then unusable.
 
 **Keep the shell intact:** `Header.tsx`, `Footer.tsx`, `SwitchTheme.tsx`, `ThemeProvider.tsx`, `ScaffoldHbarAppWithProviders.tsx` and everything under `components/scaffold-hbar/` are the wallet and theme stack. Extend them; don't replace them.
 
@@ -110,10 +110,8 @@ import { useTargetNetwork } from "~~/hooks/scaffold-hbar";
 
 Use `127.0.0.1`, never `localhost`. `localhost` resolves to `::1` before `127.0.0.1` on many
 systems, so a Node client can get `ECONNREFUSED ::1:<port>` against a server that is up and
-listening — the `yarn e2e:*` scripts hit exactly that. The browser also treats the two
-spellings as different origins, which hides the burner key in `localStorage` from whichever
-one you are not on, and the checkout then reports no signing key with nothing to explain it.
-Every URL in this repo's docs and scripts uses `127.0.0.1`; keep it that way.
+listening — the `yarn e2e:*` scripts hit exactly that. Every URL in this repo's docs and
+scripts uses `127.0.0.1`; keep it that way.
 
 ## Networks
 

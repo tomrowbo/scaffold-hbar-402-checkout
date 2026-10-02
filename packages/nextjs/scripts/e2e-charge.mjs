@@ -11,7 +11,10 @@ import { Challenge, Credential } from "mppx";
 import { Attribution } from "mppx-hedera";
 
 const MIRROR = "https://testnet.mirrornode.hedera.com";
-const BURNER_PK = process.argv[2];
+// Also accepts the key from the environment, which is how the harness's chainValidation
+// supplies its funded ephemeral signer: the browser no longer reads a key, so the on-chain
+// evidence comes from this script instead.
+const BURNER_PK = process.argv[2] ?? process.env.HEDERA_BUYER_KEY?.trim();
 const PRODUCT = process.argv[3] ?? "hashgraph-mug";
 const ORIGIN = process.env.E2E_ORIGIN?.trim() || "http://127.0.0.1:3000";
 const ENDPOINT = `${ORIGIN}/api/pay?product=${PRODUCT}`;

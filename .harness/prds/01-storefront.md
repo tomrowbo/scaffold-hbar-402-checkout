@@ -12,8 +12,9 @@ Delete: `app/admin/page.tsx`, `app/my-proofs/page.tsx`, everything under
 
 Keep the wallet and theme stack: `Header.tsx`, `Footer.tsx`, `SwitchTheme.tsx`,
 `ThemeProvider.tsx`, `ScaffoldHbarAppWithProviders.tsx`, and everything under
-`components/scaffold-hbar/`. The burner connector must keep working — later
-on-chain validation injects a key at `localStorage.burnerWallet.pk`.
+`components/scaffold-hbar/`. Payments in the browser sign with the connected wallet; the page
+holds no key. On-chain validation signs with its own key through the `yarn e2e:*`
+scripts instead — see `chainValidation.expose.envVars` in `.harness/spec.yaml`.
 
 Update `.env.example`: drop `NEXT_PUBLIC_PROOF_WALL_TOPIC_ID` and
 `NEXT_PUBLIC_PROOF_WALL_BADGE_TOKEN_ID`; keep the wallet-connect and RPC vars.

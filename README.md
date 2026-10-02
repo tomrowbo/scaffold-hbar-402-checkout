@@ -71,14 +71,10 @@ yarn install
 yarn next:dev    # then open http://127.0.0.1:3000
 ```
 
-> **Use `127.0.0.1`, not `localhost`, and stay on it.** Next prints `http://localhost:3000`
-> on startup, and this README deliberately says `127.0.0.1` everywhere instead. Two reasons.
-> `localhost` resolves to `::1` before `127.0.0.1` on many systems, so a Node client can
-> get `ECONNREFUSED ::1:3000` against a server that is up and listening — the `yarn e2e:*`
-> scripts hit exactly that. And the burner signing key lives in `localStorage`, which the
-> browser partitions by origin: the two spellings are *different origins*, so a key pasted
-> on one is invisible on the other and the checkout reports no signing key with nothing to
-> explain why. Pick one and stay on it; the examples here all use `127.0.0.1`.
+> **Use `127.0.0.1`, not `localhost`.** Next prints `http://localhost:3000` on startup, and
+> this README deliberately says `127.0.0.1` everywhere instead: `localhost` resolves to `::1`
+> before `127.0.0.1` on many systems, so a Node client can get `ECONNREFUSED ::1:3000`
+> against a server that is up and listening. The `yarn e2e:*` scripts hit exactly that.
 
 **If port 3000 is busy**, Next quietly starts on 3001 instead — but the `curl` examples
 below, the `yarn e2e:*` scripts and the browser snippets all assume 3000, so they will talk
@@ -420,25 +416,9 @@ key       c97af255da1f636cbaf42b0cafca93f492f04cc9ed117b1c1678a9cfe7580763
 Pay with it from the command line:
   yarn e2e:charge c97af255da1f636cbaf42b0cafca93f492f04cc9ed117b1c1678a9cfe7580763 hashgraph-mug
 
-Or pay in the browser. Open the store, then paste this into the DevTools console
-ON THE PAGE ITSELF — the key is stored per origin, so it has to be the same host
-you are browsing:
-
-  localStorage.setItem("burnerWallet.pk", "0xc97af255da1f636cbaf42b0cafca93f492f04cc9ed117b1c1678a9cfe7580763"); location.reload();
-
-  Works on http://127.0.0.1:3000 or http://127.0.0.1:3000 — but only the one you paste it on.
+To pay in the browser instead, connect a wallet on the checkout page — this key
+is not used there.
 ```
-
-> **`localhost` and `127.0.0.1` are different origins.** The browser partitions
-> `localStorage` by origin, and those two are separate origins even on the same port. A key
-> pasted on one is invisible on the other, and the checkout then reports that it has no
-> signing key — so the x402 rail, and the Hedera rail without a connected wallet, both sit
-> disabled with no clue as to why. There is no way around this from the page: it is the
-> browser's security model, not something the template can opt out of. Pick one host and
-> stay on it, or paste the key on both.
->
-> It bites hardest when something else sends you to the other spelling — a bookmark, a
-> terminal link, Next printing `http://127.0.0.1:3399` while you had `127.0.0.1` open.
 
 It still holds no USDC. That is what `/api/testnet/fund` is for.
 
@@ -505,19 +485,23 @@ $ curl -s 'https://testnet.mirrornode.hedera.com/api/v1/transactions/0.0.1076128
 }
 ```
 
-**3b. Or pay in the browser.** The checkout signs with a connected Hedera wallet if there is
-one, and otherwise with a key at `localStorage['burnerWallet.pk']`. From the DevTools console
-on <http://127.0.0.1:3000>:
+**3b. Or pay in the browser.** Connect a Hedera wallet with **Connect Wallet**, open
+`/checkout`, and pay. Both on-chain rails sign with the wallet — there is no key in the page
+and nothing to paste into a DevTools console. The wallet needs USDC of its own, since the
+faucet below funds the CLI's throwaway buyer rather than your wallet.
 
-```js
-localStorage.setItem("burnerWallet.pk", "0xc97af255da1f636cbaf42b0cafca93f492f04cc9ed117b1c1678a9cfe7580763");
-location.reload();
-```
+Verified against HashPack on Circle's `0.0.429274`:
 
-Then open `/checkout`, pick the Hedera option and pay. The browser path calls the faucet for
-you the same way `yarn e2e:charge` does (`settleWithBurner` in
-`packages/nextjs/lib/hederaCheckout.ts`), so an unfunded burner is fine. To top one up by
-hand:
+| Rail | Transaction | Submitted by |
+|---|---|---|
+| MPP | `0.0.10827845@1790966342.370842370` | the buyer — carries the attribution memo |
+| x402 | `0.0.9839454@1790966274.065436899` | the facilitator, which also pays the fee |
+
+The two are told apart by exactly that: an MPP charge is submitted by the buyer under its own
+transaction id and carries the 32-byte memo; an x402 settlement is submitted by the
+facilitator under *its* id, with no memo, because the buyer never broadcasts.
+
+To top up a buyer by hand:
 
 ```console
 $ curl -s -X POST -H 'Content-Type: application/json' \
@@ -725,10 +709,13 @@ through the facilitator's `POST /verify` and `POST /settle`; a successful settle
 `200` with the receipt in `PAYMENT-RESPONSE` and `X-PAYMENT-RESPONSE`. `yarn e2e:x402 <buyer-key>`
 drives the whole thing with the official `@x402/fetch` client against a running dev server and
 confirms the transfer on the Mirror Node. The same client stack runs in the browser behind
-`/checkout`'s "Pay with x402" button, signing with the burner key at
-`localStorage['burnerWallet.pk']` — there is no connected-wallet path for this rail, because
-x402's `exact` scheme needs signed-but-unsubmitted bytes that WalletConnect's Hedera methods
-do not return. A settlement is recorded in `lib/orders.ts` under a minted `x402_…` reference,
+`/checkout`'s x402 button, signing with the **connected wallet**. That rail needs a transfer
+that is signed but *not* submitted — the facilitator sponsors the fee and so has to appear in
+the transaction id — which rules out `hedera_signAndExecuteTransaction`. `hedera_signTransaction`
+returns a signed `Transaction` and broadcasts nothing, which is exactly right, and
+`lib/x402WalletSigner.ts` implements `@x402/hedera`'s `ClientHederaSigner` on top of it. The
+transaction is built to match `createClientHederaSigner`'s byte-for-byte, because the
+facilitator validates the shape before it will settle. A settlement is recorded in `lib/orders.ts` under a minted `x402_…` reference,
 returned as `orderId`/`receiptUrl` in the 200 body, and rendered on `/receipt/[id]` beside MPP
 charges. [`docs/mpp-vs-x402.md`](docs/mpp-vs-x402.md) compares the two challenge formats line
 by line.

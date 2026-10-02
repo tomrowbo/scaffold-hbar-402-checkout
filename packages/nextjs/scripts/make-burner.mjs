@@ -75,35 +75,16 @@ console.log(`key       ${burner.toStringRaw()}`);
 const origin = process.env.E2E_ORIGIN?.trim() || "http://127.0.0.1:3000";
 const originPrefix = origin === "http://127.0.0.1:3000" ? "" : `E2E_ORIGIN=${origin} `;
 
-// localStorage is partitioned per origin, and `localhost` and `127.0.0.1` are different
-// origins even on the same port. Pasting the key under one and browsing the other leaves the
-// page reporting no signing key, with nothing to suggest why — so print both and say so,
-// rather than naming one and hoping it is the one in the address bar.
-const { hostname, port, protocol } = new URL(origin);
-const sibling =
-  hostname === "localhost"
-    ? `${protocol}//127.0.0.1${port ? `:${port}` : ""}`
-    : hostname === "127.0.0.1"
-      ? `${protocol}//localhost${port ? `:${port}` : ""}`
-      : null;
-
+// No browser instructions here any more: the checkout signs with a connected wallet, and
+// nothing in the page reads a local key. This buyer exists for the CLI scripts and for the
+// harness's chainValidation, both of which sign with the key directly.
 console.log("");
 console.log("Pay with it from the command line:");
 console.log(`  ${originPrefix}yarn e2e:charge ${burner.toStringRaw()} hashgraph-mug`);
+console.log(`  ${originPrefix}yarn e2e:x402   ${burner.toStringRaw()} hashgraph-mug`);
 console.log("");
-console.log("Or pay in the browser. Open the store, then paste this into the DevTools console");
-console.log("ON THE PAGE ITSELF — the key is stored per origin, so it has to be the same host");
-console.log("you are browsing:");
-console.log("");
-console.log(`  localStorage.setItem("burnerWallet.pk", "0x${burner.toStringRaw()}"); location.reload();`);
-console.log("");
-if (sibling) {
-  console.log(`  Works on ${origin} or ${sibling} — but only the one you paste it on.`);
-  console.log("  Those are separate origins to the browser, so a key set on one is invisible");
-  console.log("  on the other, and the checkout will say it has no signing key.");
-} else {
-  console.log(`  Paste it on ${origin}, the origin this key was printed for.`);
-}
+console.log("To pay in the browser instead, connect a wallet on the checkout page — this key");
+console.log("is not used there.");
 if (!process.env.E2E_ORIGIN) {
   console.log("");
   console.log("  (Server on another port? Re-run with E2E_ORIGIN=http://127.0.0.1:<port> to");

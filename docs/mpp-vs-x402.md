@@ -286,10 +286,14 @@ Precision here, because a comparison that overstates its own implementation is w
   `yarn e2e:x402 <buyer-key>` is the script.
 
   It is also bought from the storefront. The `/checkout` page's x402 card carries an
-  `X402PayButton`, the twin of `HederaPayButton`: it reads the 402, signs the transfer in the
-  browser with the burner key at `localStorage['burnerWallet.pk']`, and settles through
-  `@x402/fetch` + `@x402/hedera` — the same client stack `yarn e2e:x402` drives from Node,
-  running in the page. Transaction `0.0.9839454@1790678082.125912158` is one that button
+  `X402PayButton`, the twin of `HederaPayButton`: it reads the 402, has the **connected
+  wallet** sign the transfer without submitting it, and settles through `@x402/fetch` +
+  `@x402/hedera` — the same client stack `yarn e2e:x402` drives from Node, running in the
+  page. The wallet signs via `hedera_signTransaction`, which returns signed bytes and
+  broadcasts nothing; `hedera_signAndExecuteTransaction` cannot be used here, because it
+  submits under the wallet's own transaction id and the facilitator has to be the fee payer
+  named in that id. Verified with HashPack: `0.0.9839454@1790966274.065436899`, buyer
+  `0.0.10827845`. Transaction `0.0.9839454@1790678082.125912158` is one that button
   settled: 12 USDC of `0.0.5449` from `0.0.10775007` to `0.0.8569027`
   ([HashScan](https://hashscan.io/testnet/transaction/0.0.9839454@1790678082.125912158)).
 
