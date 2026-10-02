@@ -129,7 +129,7 @@ not an exercise left to the reader:
 
 | Rail | Demo (default) | Production |
 |---|---|---|
-| Hedera | `HEDERA_NETWORK=testnet` (default), USDC `0.0.5449` | `HEDERA_NETWORK=mainnet`, USDC `0.0.456858` |
+| Hedera | `HEDERA_NETWORK=testnet` (default), USDC `0.0.429274` | `HEDERA_NETWORK=mainnet`, USDC `0.0.456858` |
 | Stripe | `sk_test_` key -> `livemode: false` | `sk_live_` key -> `livemode: true` |
 | MPP secret | insecure literal default | `MPP_SECRET_KEY`, 32+ bytes, required |
 | Faucet route | enabled | hard-disabled |

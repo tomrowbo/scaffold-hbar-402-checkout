@@ -35,7 +35,7 @@ www-authenticate: Payment id="-_xEH9…X6o", realm="localhost:3000", method="hed
 `request` is base64url JSON. Decoded, the two offers are:
 
 ```json
-{ "amount": "750000", "currency": "0.0.5449", "methodDetails": { "chainId": 296 }, "recipient": "0.0.0" }
+{ "amount": "750000", "currency": "0.0.429274", "methodDetails": { "chainId": 296 }, "recipient": "0.0.0" }
 { "amount": "2400",     "currency": "usd",      "methodDetails": { "networkId": "demo", "paymentMethodTypes": ["card"] } }
 ```
 
@@ -64,7 +64,7 @@ facilitator configured the body also carries `"demo": true`, and the response ca
       "scheme": "exact",
       "network": "hedera:testnet",
       "amount": "750000",
-      "asset": "0.0.5449",
+      "asset": "0.0.429274",
       "payTo": "0.0.0",
       "maxTimeoutSeconds": 30,
       "extra": {}
@@ -270,6 +270,11 @@ Precision here, because a comparison that overstates its own implementation is w
   on `hedera:testnet`; if it doesn't, or it can't be reached, the route stays in demo mode
   rather than failing.
 
+  > The two settled transactions quoted below are real and still verifiable on HashScan, but
+  > they predate two changes: the catalogue was priced in dollars rather than cents, and the
+  > store settled `0.0.5449` rather than Circle's `0.0.429274`. The amounts and token id you
+  > see today differ; the protocol flow does not. They are left as recorded.
+
   A retry carrying `PAYMENT-SIGNATURE` is checked against the offer this server made — scheme,
   network, amount, asset and `payTo`, so a client cannot name its own terms — then run through
   `POST /verify` and `POST /settle` against the facilitator. A successful settlement returns
@@ -302,9 +307,11 @@ Precision here, because a comparison that overstates its own implementation is w
   both protocols.
 
   One thing a buyer has to opt into, and it is the client's policy rather than this server's:
-  `@x402/hedera` treats `0.0.429274` as testnet USDC, while this store charges in `0.0.5449`
-  (see `lib/mppx.ts` for why), and `@x402/core`'s default spend cap is $1 per payment. Both
-  reject the offer client-side until `spendControls` allows the token and the amount.
+  `@x402/core`'s default spend cap is $1 per payment, and the catalogue goes above it, so the
+  client rejects the offer until `spendControls` raises the cap. The asset used to need
+  allowing too — `@x402/hedera`'s only default testnet asset is `0.0.429274` and this store
+  charged in `0.0.5449` — but the store settles `0.0.429274` now, so the two agree unless you
+  repoint `HEDERA_USDC_TOKEN_ID`.
 
 A related data point, from reading the `mppx` package itself: its own x402 adapter
 (`mppx/x402`) is EVM-only — `evmNetworkPrefix` is `'eip155:'` and its network type is

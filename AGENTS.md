@@ -132,7 +132,8 @@ steps — request, settle, retry — and the whole thing fits in a file.
    (`method="hedera"` and `method="stripe"`).
 2. Pick the `hedera` challenge. Its base64url `request` decodes to
    `{ amount, currency, methodDetails: { chainId }, recipient }` — `amount` in USDC base
-   units, `currency` the HTS token id (`0.0.5449` on testnet).
+   units, `currency` the HTS token id (Circle's `0.0.429274` on testnet, or whatever
+   `HEDERA_USDC_TOKEN_ID` names).
 3. Build a `TransferTransaction` moving `amount` of `currency` from the agent to `recipient`,
    with the transaction memo set to `Attribution.encode({ challengeId, serverId })`. That
    32-byte memo is what binds the on-chain transfer to this specific challenge; `serverId`
@@ -145,7 +146,7 @@ steps — request, settle, retry — and the whole thing fits in a file.
 
 Run it from `packages/nextjs` (that is where `mppx` and `mppx-hedera` resolve from) against
 a dev server started with `HEDERA_OPERATOR_ID` / `HEDERA_OPERATOR_KEY` set. The agent account
-needs HBAR for fees and USDC (`0.0.5449`) to spend, and must be a different account from the
+needs HBAR for fees and USDC (`0.0.429274`) to spend, and must be a different account from the
 merchant's `HEDERA_RECIPIENT_ID`.
 
 ```js
@@ -232,7 +233,7 @@ const credential = await method.createCredential({ challenge }); // already seri
 
 Two caveats, both from reading the package: it resolves the token from
 `methodDetails.chainId` rather than from the challenge's `currency` field (they agree here —
-296 → `0.0.5449`), and it parses the key with `PrivateKey.fromStringECDSA` only, so an
+296 → `0.0.429274`), and it parses the key with `PrivateKey.fromStringECDSA` only, so an
 ED25519 operator key throws. The longhand above has neither constraint.
 
 ### Do not import `mppx/client` in this repo

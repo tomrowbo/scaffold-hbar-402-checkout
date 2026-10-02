@@ -149,7 +149,7 @@ That is **one `WWW-Authenticate` header carrying two `Payment` challenges**. Bas
 the two `request` blobs and the same $0.75 purchase appears priced on two different rails:
 
 ```json
-{ "amount": "750000", "currency": "0.0.5449", "methodDetails": { "chainId": 296 }, "recipient": "0.0.0" }
+{ "amount": "750000", "currency": "0.0.429274", "methodDetails": { "chainId": 296 }, "recipient": "0.0.0" }
 { "amount": "2400",     "currency": "usd",      "methodDetails": { "networkId": "demo", "paymentMethodTypes": ["card"] } }
 ```
 
@@ -161,7 +161,7 @@ the two `request` blobs and the same $0.75 purchase appears priced on two differ
 > b64url eyJhbW91bnQiOiI3NTAwMDAiLCJjdXJyZW5jeSI6IjAuMC41NDQ5IiwibWV0aG9kRGV0YWlscyI6eyJjaGFpbklkIjoyOTZ9LCJyZWNpcGllbnQiOiIwLjAuMCJ9
 > ```
 
-USDC base units on Hedera testnet token `0.0.5449`; cents in USD on Stripe. `recipient`
+USDC base units on Hedera testnet token `0.0.429274`; cents in USD on Stripe. `recipient`
 is `0.0.0` and `networkId` is `demo` because nothing is configured yet —
 `x-mpp-demo-mode: hedera,stripe` says exactly which rails are stubbed. Configure a rail and
 its half of this header becomes real, independently of the other.
@@ -197,11 +197,12 @@ click and the operator has a balance.
    (USDC/HBAR, pool 3). Point the store at it with `HEDERA_USDC_TOKEN_ID=0.0.5449` — no code
    change, and `mppx-hedera` verifies against whatever the challenge advertises.
 
-> **A note on the transcripts below.** Everything captured in this README was recorded with
-> `HEDERA_USDC_TOKEN_ID=0.0.5449`, so that is the token you will see in the `402` challenges,
-> the receipts and the Mirror Node lookups. The flow is identical on Circle's `0.0.429274` —
-> the token id is the only thing that differs — but these are real captured output and are
-> left as they were recorded rather than edited to show a run that did not happen.
+> **A note on the transcripts below.** The `402` challenges were captured against Circle's
+> `0.0.429274` and match what this template now serves. The *settlement* transcripts — the
+> `yarn e2e:charge` runs, the faucet responses and the Mirror Node transfer lookups — were
+> recorded earlier with `HEDERA_USDC_TOKEN_ID=0.0.5449`, so that is the token id you will see
+> in them. The flow is identical either way; they are real captured output and are left as
+> recorded rather than edited to depict a run that never happened.
 
 **This is also why the catalogue is priced in cents.** Nothing costs more than $2.00, so a
 single faucet drop covers dozens of runs across all three rails — and because each purchase
@@ -211,21 +212,28 @@ drop buys one item and then refuses. Change `priceUsd` in
 `0.50`, which is Stripe's minimum charge. Below it mppx stops advertising the card rail
 instead of failing visibly.
 
-Both on-chain rails move testnet USDC `0.0.5449`, and the
-operator has to be holding some before anything settles — `/api/testnet/fund` moves the
-operator's own balance to a test buyer, it is not a mint. The Hedera Portal gives you HBAR,
-not USDC, and this is the part that costs people an afternoon: **no faucet hands out
-`0.0.5449` directly.**
+Both on-chain rails move Circle's testnet USDC `0.0.429274`, and the operator has to be
+holding some before anything settles — `/api/testnet/fund` moves the operator's own balance
+to a test buyer, it is not a mint. The Hedera Portal gives you HBAR, not USDC.
 
-What does work, in two steps:
+**The one click:** [faucet.circle.com](https://faucet.circle.com) → Hedera Testnet → your
+operator account id. It sends 20 USDC, which at this catalogue's prices is dozens of
+purchases on every rail — and because each payment returns the USDC to the merchant, you
+effectively never run out. Mind the two traps above: your account needs to be able to
+receive the token, and Circle rate-limits repeat requests.
+
+### If you need more than Circle's faucet will give you
+
+Hedera testnet carries a second USDC, `0.0.5449`, identical in name, symbol and decimals and
+differing only in its treasury (`0.0.3923` rather than Circle's `0.0.5176`). It has no faucet
+at all, but it has deep SaucerSwap liquidity, so you can buy as much as you like:
 
 1. **Get testnet HBAR** from the [Hedera Portal faucet](https://portal.hedera.com/faucet) —
    100 HBAR per day against your testnet account id.
-2. **Swap it for `0.0.5449`** on SaucerSwap's testnet deployment,
-   <https://testnet.saucerswap.finance>. Connect the operator account, let it associate
-   `0.0.5449`, and swap HBAR for USDC. Its USDC/HBAR pool (contract `0.0.2661044`) is the
-   deepest market for this token on testnet and is still actively traded — check the reserves
-   yourself rather than taking this README's word for it:
+2. **Swap it for `0.0.5449`** on <https://testnet.saucerswap.finance>. Connect the operator
+   account, let it associate the token, and swap. The USDC/HBAR pool (contract
+   `0.0.2661044`) is the deepest market for it on testnet — check the reserves yourself
+   rather than taking this README's word for it:
 
    ```console
    $ curl -s https://test-api.saucerswap.finance/pools/3 \
@@ -240,12 +248,19 @@ What does work, in two steps:
 
    (`0.0.15058` is WHBAR, 8 decimals. Testnet pricing is arbitrary and bears no relation to
    the real HBAR/USDC rate — that is fine, it is play money either way.)
+3. **Point the store at it:** `HEDERA_USDC_TOKEN_ID=0.0.5449`. No code change. The token
+   travels in the 402 as `currency` and `mppx-hedera` verifies against whatever the challenge
+   advertised.
 
-**Not Circle's faucet.** <https://faucet.circle.com> does list Hedera Testnet and does hand
-out 20 USDC, but the token it sends is **`0.0.429274`**, the other testnet USDC. `mppx-hedera`
-pins `0.0.5449` for chain 296 and checks the Mirror Node for transfers of *that* token, so
-USDC from Circle's faucet cannot settle a charge here, and no amount of configuration will
-make it. If someone already holds `0.0.5449`, a plain transfer works too.
+Circle's token has the faucet and no market; this one has the market and no faucet. That is
+the whole trade-off, and the variable exists so you can take either side of it.
+
+> **Why the token id matters more than it looks.** The two are indistinguishable in logs,
+> wallets and error messages — same name, same symbol, same decimals. Settle one and fund the
+> other and you get `insufficient_balance` naming a token you are visibly holding. Before
+> `mppx-hedera` 0.3.0 this was worse than confusing: the library accepted a configured
+> `currency` when issuing the 402 and then verified against its own default, so an override
+> was advertised and silently never found.
 
 
 ## Rail: Hedera USDC (native, no facilitator)
@@ -314,8 +329,9 @@ request returned `200` with a matching `Payment-Receipt`. Note the Mirror Node's
 transaction-id form uses hyphens (`0.0.x-seconds-nanos`) where the protocol and HashScan
 use `@`.
 
-> Testnet USDC in this template is **`0.0.5449`**. `0.0.429274` is a *different* testnet
-> token with the same name, symbol and decimals — charges against it cannot be verified here.
+> Testnet USDC in this template is Circle's **`0.0.429274`**. `0.0.5449` is a *different*
+> testnet token with the same name, symbol and decimals; set `HEDERA_USDC_TOKEN_ID` to settle
+> that one instead.
 
 ## Your first payment (Hedera testnet)
 
@@ -657,7 +673,7 @@ payment-required: eyJ4NDAyVmVyc2lvbiI6MiwiZXJyb3IiOiJwYXltZW50IGlzIHJlcXVpcmVkIi
 {"x402Version":2,"error":"payment is required",
  "resource":{"url":"http://localhost:3000/api/x402?product=hbar-tee",
  "description":"402 Checkout - HBAR Logo Tee","mimeType":"application/json","serviceName":"402 Checkout"},
- "accepts":[{"scheme":"exact","network":"hedera:testnet","amount":"750000","asset":"0.0.5449",
+ "accepts":[{"scheme":"exact","network":"hedera:testnet","amount":"750000","asset":"0.0.429274",
  "payTo":"0.0.0","maxTimeoutSeconds":30,"extra":{}}],"demo":true}
 ```
 

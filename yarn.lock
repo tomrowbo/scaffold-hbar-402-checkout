@@ -2369,7 +2369,7 @@ __metadata:
     eslint-plugin-prettier: ^5.2.4
     ethers: ^6.16.0
     mppx: 0.10.1
-    mppx-hedera: 0.2.2
+    mppx-hedera: ^0.3.0
     next: ^15.2.8
     next-nprogress-bar: ^2.3.13
     next-themes: ^0.3.0
@@ -8307,14 +8307,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mppx-hedera@npm:0.2.2":
-  version: 0.2.2
-  resolution: "mppx-hedera@npm:0.2.2"
+"mppx-hedera@npm:^0.3.0":
+  version: 0.3.0
+  resolution: "mppx-hedera@npm:0.3.0"
   peerDependencies:
     "@hiero-ledger/sdk": ">=2.50.0"
     mppx: ">=0.5.9"
     viem: ">=2.21.0"
-  checksum: 6fc8d430a297c3477861412add341af0b53300d362928c3a2f3a3b0cfae12f409d7813fe03d6aaa911ca8a37eb8aa72984a5d00ec90e2e1e929f5493b798c17a
+  checksum: 0ffae1d795e18dc27bcd3d6c4d42e5e089f7efdb0d96e93b3ea4ecc9ac0a306118e4c1e3ef9e530fb8a2764591b1a1bfa81a0562f6a5b0b21b7378cd21f1908d
   languageName: node
   linkType: hard
 

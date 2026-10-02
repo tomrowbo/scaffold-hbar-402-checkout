@@ -75,7 +75,7 @@ different money:
 ```ts
 export function charge(options: ChargeOptions): Handler {
   return handlers.compose(
-    ["hedera/charge", options],                                       // USDC base units, token 0.0.5449
+    ["hedera/charge", options],                                       // USDC base units, token 0.0.429274
     ["stripe/charge", { amount: options.amount, currency: "usd", decimals: 2, ... }],  // cents, USD
   );
 }
@@ -83,13 +83,13 @@ export function charge(options: ChargeOptions): Handler {
 
 That is the part the implicit `mppx.charge(...)` shorthand cannot express. One shorthand call
 gives every method the same request options; here the Hedera offer needs
-`currency: "0.0.5449", decimals: 6` and the card offer needs `currency: "usd", decimals: 2`.
+`currency: "0.0.429274", decimals: 6` and the card offer needs `currency: "usd", decimals: 2`.
 `compose` gives each method its own.
 
 The result on the wire, for a $0.75 item:
 
 ```json
-{ "amount": "750000", "currency": "0.0.5449", "methodDetails": { "chainId": 296 }, "recipient": "0.0.…" }
+{ "amount": "750000", "currency": "0.0.429274", "methodDetails": { "chainId": 296 }, "recipient": "0.0.…" }
 { "amount": "2400",     "currency": "usd",      "methodDetails": { "networkId": "…", "paymentMethodTypes": ["card"] } }
 ```
 

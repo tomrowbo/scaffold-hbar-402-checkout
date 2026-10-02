@@ -22,7 +22,7 @@ to end; a valid 402 was produced and its payload decoded). Two things to get rig
 
 A verified-working construction, producing
 `Payment ... method="hedera", intent="charge"` with decoded payload
-`{amount:"10000", currency:"0.0.5449", methodDetails:{chainId:296}, recipient:"0.0.8569027"}`:
+`{amount:"10000", currency:"0.0.429274", methodDetails:{chainId:296}, recipient:"0.0.8569027"}`:
 
     import { Mppx } from 'mppx/server'
     import { hedera } from 'mppx-hedera/server'
@@ -35,7 +35,7 @@ A verified-working construction, producing
 
     // recipient goes HERE, not on hedera.charge()
     const result = await mppx.charge({
-      amount, currency: '0.0.5449', decimals: 6, recipient,
+      amount, currency: '0.0.429274', decimals: 6, recipient,
     })(request)
 
 The original shape below is kept for reference but the recipient placement above wins:
@@ -66,10 +66,13 @@ Handler shape:
 
 ## Settlement and verification
 
-- USDC testnet token `0.0.5449`, 6 decimals. This is the token `mppx-hedera`
-  documents and the one the operator actually holds (verified 2026-09-22:
-  balance 210.26). Do NOT use `0.0.429274` — a different testnet USDC with the
-  same name and symbol, of which the operator holds none.
+- USDC testnet token `0.0.429274`, 6 decimals — Circle's, and the one
+  `faucet.circle.com` dispenses. `mppx-hedera` defaults to it from 0.3.0.
+  `0.0.5449` is a different testnet USDC with the same name, symbol and
+  decimals; it has no faucet but deep SaucerSwap liquidity, and
+  `HEDERA_USDC_TOKEN_ID` selects it. Earlier revisions of this PRD said to
+  avoid Circle's token, which was true only because the library pinned the
+  other one and ignored any override.
 - Verify settlement by reading the Mirror Node and matching the ERC-20
   Transfer log — do not trust a client-supplied hash alone.
 - Mirror Node indexing is usually sub-second but can lag 2–5s. Poll with a
