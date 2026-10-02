@@ -3,13 +3,12 @@ import { HederaPortalFaucet } from "@scaffold-hbar-ui/components";
 import { hedera } from "viem/chains";
 import { CurrencyDollarIcon } from "@heroicons/react/24/outline";
 import { SwitchTheme } from "~~/components/SwitchTheme";
-import { useFetchHbarPrice, useTargetNetwork } from "~~/hooks/scaffold-hbar";
+import { useTargetNetwork } from "~~/hooks/scaffold-hbar";
 
 /**
  * Site footer
  */
 export const Footer = () => {
-  const { price: nativeCurrencyPrice } = useFetchHbarPrice();
   const { targetNetwork } = useTargetNetwork();
   const isTestnet = targetNetwork.id !== hedera.id;
 
@@ -18,17 +17,23 @@ export const Footer = () => {
       <div>
         <div className="fixed flex justify-between items-center w-full z-10 p-4 bottom-0 left-0 pointer-events-none">
           <div className="flex flex-col md:flex-row gap-2 pointer-events-auto">
-            {nativeCurrencyPrice > 0 && (
-              <div>
-                {/* Labelled: an unexplained floating price pill reads as part of the checkout. */}
-                <div className="btn btn-primary btn-sm font-normal gap-1 cursor-auto" title="Current HBAR price in USD">
+            {isTestnet && (
+              <>
+                {/* The store settles in USDC, so the USDC faucet comes first. HBAR still pays
+                    the transaction fees, which is what the Portal faucet below is for. */}
+                <a
+                  href="https://faucet.circle.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn btn-primary btn-sm font-normal gap-1"
+                  title="Circle's faucet — pick Hedera Testnet. Sends the USDC this store charges in."
+                >
                   <CurrencyDollarIcon className="h-4 w-4" />
-                  <span>{nativeCurrencyPrice.toFixed(2)}</span>
-                  <span className="opacity-70">/ HBAR</span>
-                </div>
-              </div>
+                  Get testnet USDC
+                </a>
+                <HederaPortalFaucet />
+              </>
             )}
-            {isTestnet && <HederaPortalFaucet />}
           </div>
           <SwitchTheme className="pointer-events-auto" />
         </div>

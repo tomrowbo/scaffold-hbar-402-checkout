@@ -4,7 +4,7 @@ import React, { useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bars3Icon, BuildingStorefrontIcon, CreditCardIcon } from "@heroicons/react/24/outline";
+import { Bars3Icon, BuildingStorefrontIcon } from "@heroicons/react/24/outline";
 import { WalletConnectButton } from "~~/components/scaffold-hbar";
 import { useOutsideClick } from "~~/hooks/scaffold-hbar";
 
@@ -14,16 +14,16 @@ type HeaderMenuLink = {
   icon?: React.ReactNode;
 };
 
+/**
+ * Checkout is deliberately absent: it is a step you reach from a product, not a place to
+ * browse to, and a nav entry to it lands you on whichever item happens to be first. The
+ * breadcrumb on `/checkout` is how you get back.
+ */
 export const menuLinks: HeaderMenuLink[] = [
   {
     label: "Store",
     href: "/",
     icon: <BuildingStorefrontIcon className="h-4 w-4" />,
-  },
-  {
-    label: "Checkout",
-    href: "/checkout",
-    icon: <CreditCardIcon className="h-4 w-4" />,
   },
 ];
 

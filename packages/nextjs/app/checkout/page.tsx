@@ -92,17 +92,6 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
             <PaymentOption key={option.label} {...option} />
           ))}
         </section>
-
-        <p className="text-sm text-base-content/60 mt-8 m-0">
-          Raw protocol:{" "}
-          <Link href={`/api/pay?product=${product.id}`} className="link link-primary font-mono text-xs">
-            /api/pay?product={product.id}
-          </Link>{" "}
-          ·{" "}
-          <Link href={`/receipt/${product.id}`} className="link link-primary">
-            sample receipt
-          </Link>
-        </p>
       </div>
     </div>
   );
