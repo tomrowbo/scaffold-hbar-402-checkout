@@ -39,7 +39,7 @@ card path and stubs elsewhere. Never gate the whole app on one variable.
 
     type Product = { id: string; name: string; priceUsd: string; image: string }
 
-Prices as decimal strings, e.g. "12.00". Use local image files in
+Prices as decimal strings, e.g. "0.50". Use local image files in
 `public/` — no remote image fetches, which would break a judge behind a
 firewall.
 

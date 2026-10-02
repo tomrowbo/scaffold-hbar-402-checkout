@@ -338,7 +338,7 @@ export const mppx = mppxForRealm(MPP_REALM);
 /** Options accepted by the Hedera charge intent, after mppx's request transform. */
 export type ChargeOptions = {
   /**
-   * Human-readable decimal string, e.g. `"24.00"`. mppx scales it by `decimals`. The card
+   * Human-readable decimal string, e.g. `"0.75"`. mppx scales it by `decimals`. The card
    * offer reuses it as a USD amount — USDC and the catalogue are both dollar-denominated.
    */
   amount: string;

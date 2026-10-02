@@ -35,7 +35,7 @@ www-authenticate: Payment id="-_xEH9…X6o", realm="localhost:3000", method="hed
 `request` is base64url JSON. Decoded, the two offers are:
 
 ```json
-{ "amount": "24000000", "currency": "0.0.5449", "methodDetails": { "chainId": 296 }, "recipient": "0.0.0" }
+{ "amount": "750000", "currency": "0.0.5449", "methodDetails": { "chainId": 296 }, "recipient": "0.0.0" }
 { "amount": "2400",     "currency": "usd",      "methodDetails": { "networkId": "demo", "paymentMethodTypes": ["card"] } }
 ```
 
@@ -63,7 +63,7 @@ facilitator configured the body also carries `"demo": true`, and the response ca
     {
       "scheme": "exact",
       "network": "hedera:testnet",
-      "amount": "24000000",
+      "amount": "750000",
       "asset": "0.0.5449",
       "payTo": "0.0.0",
       "maxTimeoutSeconds": 30,
@@ -126,7 +126,7 @@ This is MPP's structural advantage, and it is the reason this template exists.
 `WWW-Authenticate` is defined to carry a list of challenges. MPP uses that: one `402` can
 offer a card charge *and* an on-chain USDC transfer, and the client picks. The two offers
 are not variants of one payment — they are different money with different units
-(`2400` cents versus `24000000` USDC base units), different settlement systems, and
+(`2400` cents versus `750000` USDC base units), different settlement systems, and
 different failure modes, advertised together. A browser takes the card; an agent with a
 Hedera key takes the token transfer. Neither needs to know the other exists.
 
@@ -172,8 +172,8 @@ $ curl -s 'https://testnet.mirrornode.hedera.com/api/v1/transactions/0.0.1067230
   | jq '.transactions[0] | {result, name, token_transfers}'
 { "result": "SUCCESS", "name": "CRYPTOTRANSFER",
   "token_transfers": [
-    { "token_id": "0.0.5449", "account": "0.0.8569027",  "amount": 24000000 },
-    { "token_id": "0.0.5449", "account": "0.0.10672305", "amount": -24000000 } ] }
+    { "token_id": "0.0.5449", "account": "0.0.8569027",  "amount": 750000 },
+    { "token_id": "0.0.5449", "account": "0.0.10672305", "amount": -750000 } ] }
 ```
 
 Nothing sits between merchant and ledger. No third party can censor the payment, go down

@@ -14,7 +14,7 @@ when your buyer is code.
 Two words recur below. A **challenge** is the `402` response describing what to pay; a
 **rail** is one way to pay it (a card, an on-chain transfer). This template implements both
 protocols against one storefront so you can read them against the same product and the same
-$24.00 — [`docs/mpp-vs-x402.md`](docs/mpp-vs-x402.md) is the line-by-line comparison.
+$0.75 — [`docs/mpp-vs-x402.md`](docs/mpp-vs-x402.md) is the line-by-line comparison.
 
 Concretely: a merch storefront whose `/api/pay` answers `402` with **one challenge
 advertising two rails at once** — a Stripe card charge and a native Hedera USDC transfer —
@@ -37,7 +37,7 @@ Stripe keys gets a live card path and honest demo stubs everywhere else.
 Every rail reads its own credentials, so each tile above flips independently. Checkout shows
 the same three side by side, all answering the one `402`:
 
-![Checkout: Card, Hedera and x402 offered against the same $64.00 order](docs/images/checkout.jpg)
+![Checkout: Card, Hedera and x402 offered against the same $2.00 order](docs/images/checkout.jpg)
 
 Both screenshots are the template with all three rails configured. Out of the box every tile
 reads `Demo mode` instead, and the store still runs.
@@ -133,23 +133,23 @@ $ curl -i -H 'Accept: application/json' 'http://localhost:3000/api/pay?product=h
 HTTP/1.1 402 Payment Required
 content-type: application/problem+json
 www-authenticate: Payment id="-_xEH9nHBj52K3idMY3JbZKLzk2WyzZhHqb_srQ9X6o", realm="localhost:3000",
-  method="hedera", intent="charge", request="eyJhbW91bnQiOiIyNDAwMDAwMCIsImN1cnJlbmN5IjoiMC4wLjU0NDkiLCJtZXRob2REZXRhaWxzIjp7ImNoYWluSWQiOjI5Nn0sInJlY2lwaWVudCI6IjAuMC4wIn0",
+  method="hedera", intent="charge", request="eyJhbW91bnQiOiI3NTAwMDAiLCJjdXJyZW5jeSI6IjAuMC41NDQ5IiwibWV0aG9kRGV0YWlscyI6eyJjaGFpbklkIjoyOTZ9LCJyZWNpcGllbnQiOiIwLjAuMCJ9",
   description="402 Checkout — HBAR Logo Tee", expires="2026-09-22T23:35:57.547Z",
-  opaque="eyJhbW91bnRVc2QiOiIyNC4wMCIsInByb2R1Y3QiOiJoYmFyLXRlZSJ9",
+  opaque="eyJhbW91bnRVc2QiOiIwLjc1IiwicHJvZHVjdCI6ImhiYXItdGVlIn0",
   Payment id="x_FqLNbLofS75N7jKaDnBRfZa3svPhh6ZJ_X6i2ByWk", realm="localhost:3000",
-  method="stripe", intent="charge", request="eyJhbW91bnQiOiIyNDAwIiwiY3VycmVuY3kiOiJ1c2QiLCJtZXRob2REZXRhaWxzIjp7Im5ldHdvcmtJZCI6ImRlbW8iLCJwYXltZW50TWV0aG9kVHlwZXMiOlsiY2FyZCJdfX0",
+  method="stripe", intent="charge", request="eyJhbW91bnQiOiI3NSIsImN1cnJlbmN5IjoidXNkIiwibWV0aG9kRGV0YWlscyI6eyJuZXR3b3JrSWQiOiJkZW1vIiwicGF5bWVudE1ldGhvZFR5cGVzIjpbImNhcmQiXX19",
   description="402 Checkout — HBAR Logo Tee", expires="2026-09-22T23:35:57.556Z",
-  opaque="eyJhbW91bnRVc2QiOiIyNC4wMCIsInByb2R1Y3QiOiJoYmFyLXRlZSJ9"
+  opaque="eyJhbW91bnRVc2QiOiIwLjc1IiwicHJvZHVjdCI6ImhiYXItdGVlIn0"
 x-mpp-demo-mode: hedera,stripe
 ```
 
 (Header folded here for reading; it is one line on the wire.)
 
 That is **one `WWW-Authenticate` header carrying two `Payment` challenges**. Base64url-decode
-the two `request` blobs and the same $24.00 purchase appears priced on two different rails:
+the two `request` blobs and the same $0.75 purchase appears priced on two different rails:
 
 ```json
-{ "amount": "24000000", "currency": "0.0.5449", "methodDetails": { "chainId": 296 }, "recipient": "0.0.0" }
+{ "amount": "750000", "currency": "0.0.5449", "methodDetails": { "chainId": 296 }, "recipient": "0.0.0" }
 { "amount": "2400",     "currency": "usd",      "methodDetails": { "networkId": "demo", "paymentMethodTypes": ["card"] } }
 ```
 
@@ -158,7 +158,7 @@ the two `request` blobs and the same $24.00 purchase appears priced on two diffe
 >
 > ```bash
 > b64url() { python3 -c 'import base64,sys; s=sys.argv[1]; print(base64.urlsafe_b64decode(s + "=" * (-len(s) % 4)).decode())' "$1"; }
-> b64url eyJhbW91bnQiOiIyNDAwMDAwMCIsImN1cnJlbmN5IjoiMC4wLjU0NDkiLCJtZXRob2REZXRhaWxzIjp7ImNoYWluSWQiOjI5Nn0sInJlY2lwaWVudCI6IjAuMC4wIn0
+> b64url eyJhbW91bnQiOiI3NTAwMDAiLCJjdXJyZW5jeSI6IjAuMC41NDQ5IiwibWV0aG9kRGV0YWlscyI6eyJjaGFpbklkIjoyOTZ9LCJyZWNpcGllbnQiOiIwLjAuMCJ9
 > ```
 
 USDC base units on Hedera testnet token `0.0.5449`; cents in USD on Stripe. `recipient`
@@ -167,6 +167,14 @@ is `0.0.0` and `networkId` is `demo` because nothing is configured yet —
 its half of this header becomes real, independently of the other.
 
 ## Getting testnet USDC (`0.0.5449`)
+
+**This is why the catalogue is priced in cents.** Nothing on the store costs more than
+$2.00, because `0.0.5449` has no faucet and you have to swap HBAR for it. At these prices a
+couple of USDC covers dozens of runs across all three rails; priced like real merch, the
+same balance buys one purchase and then refuses. Change `priceUsd` in
+`packages/nextjs/lib/products.ts` when you fork this — but keep everything at or above
+`0.50`, which is Stripe's minimum charge. Below it mppx stops advertising the card rail
+instead of failing visibly.
 
 Both on-chain rails move testnet USDC `0.0.5449`, and the
 operator has to be holding some before anything settles — `/api/testnet/fund` moves the
@@ -260,13 +268,13 @@ $ curl -s 'https://testnet.mirrornode.hedera.com/api/v1/transactions/0.0.1067230
   "result": "SUCCESS",
   "name": "CRYPTOTRANSFER",
   "token_transfers": [
-    { "token_id": "0.0.5449", "account": "0.0.8569027",  "amount": 24000000,  "is_approval": false },
-    { "token_id": "0.0.5449", "account": "0.0.10672305", "amount": -24000000, "is_approval": false }
+    { "token_id": "0.0.5449", "account": "0.0.8569027",  "amount": 750000,  "is_approval": false },
+    { "token_id": "0.0.5449", "account": "0.0.10672305", "amount": -750000, "is_approval": false }
   ]
 }
 ```
 
-24.000000 USDC (`0.0.5449`, 6 decimals) moved from buyer to merchant, and the retried
+0.750000 USDC (`0.0.5449`, 6 decimals) moved from buyer to merchant, and the retried
 request returned `200` with a matching `Payment-Receipt`. Note the Mirror Node's
 transaction-id form uses hyphens (`0.0.x-seconds-nanos`) where the protocol and HashScan
 use `@`.
@@ -333,7 +341,7 @@ $ curl -s 'https://testnet.mirrornode.hedera.com/api/v1/accounts/0.0.8569027/tok
 ```
 
 Balances are base units at 6 decimals, so `14260022` is **14.26 USDC** — comfortably more
-than the $12.00 mug this walkthrough buys. `null`, or an empty `tokens` array, means the
+than the $0.50 mug this walkthrough buys. `null`, or an empty `tokens` array, means the
 operator has never held the token at all; [Getting testnet USDC](#getting-testnet-usdc-005449)
 fixes either case.
 
@@ -375,19 +383,19 @@ $ yarn e2e:charge c97af255da1f636cbaf42b0cafca93f492f04cc9ed117b1c1678a9cfe75807
 2. parsed: {
   id: 'htv6tYtHWomdY3QShSm-E-Cltwmmqj1Det-FF2k4uuc',
   realm: 'localhost:3000',
-  amount: '12000000',
+  amount: '500000',
   tokenId: '0.0.5449',
   recipient: '0.0.8569027'
 }
 3. memo: 0xef1ed71201799e61a18946a19f71c4000000000000000000001ac6d4282fc898
 4. buyer: 0.0.10761282 usdc: null
-5. fund: 200 {"funded":true,"accountId":"0.0.10761282","tokenId":"0.0.5449","amount":"12000000","needed":"12000000"}
+5. fund: 200 {"funded":true,"accountId":"0.0.10761282","tokenId":"0.0.5449","amount":"500000","needed":"500000"}
    buyer usdc now: null
 6. signed transfer, submitting credential (pull mode)…
 7. settled status: 200
    payment-receipt: eyJtZXRob2QiOiJoZWRlcmEiLCJyZWZlcmVuY2UiOiIwLjAuMTA3NjEyODJAMTc5MDYwNTY1Ni4yMTIxMjk3MzQiLCJzdGF0dXMiOiJzdWNjZXNzIiwidGltZXN0YW1wIjoiMjAyNi0wOS0yOFQxNDoyNzo0Ny43OTJaIn0
    body: {"orderId":"htv6tYtHWomdY3QShSm-E-Cltwmmqj1Det-FF2k4uuc","receiptUrl":"/receipt/htv6tYtHWomdY3QShSm-E-Cltwmmqj1Det-FF2k4uuc",
-          "product":{"id":"hashgraph-mug","name":"Hashgraph Mug","priceUsd":"12.00"},
+          "product":{"id":"hashgraph-mug","name":"Hashgraph Mug","priceUsd":"0.50"},
           "transactionId":"0.0.10761282@1790605656.212129734",
           "hashscanUrl":"https://hashscan.io/testnet/transaction/0.0.10761282@1790605656.212129734"}
 ```
@@ -399,11 +407,11 @@ Any other status is a real failure with a real cause, and the script stops there
 it rather than signing a transfer the buyer cannot pay for:
 
 ```console
-5. fund: 502 {"error":"operator_underfunded","detail":"Operator 0.0.8569027 holds 14.260022 USDC (token 0.0.5449) on testnet, which is not enough to send the buyer the 64.000000 this top-up needs. Get testnet HBAR from https://portal.hedera.com/faucet and swap it for token 0.0.5449 on https://testnet.saucerswap.finance ..."}
+5. fund: 502 {"error":"operator_underfunded","detail":"Operator 0.0.8569027 holds 0.120000 USDC (token 0.0.5449) on testnet, which is not enough to send the buyer the 2.000000 this top-up needs. Get testnet HBAR from https://portal.hedera.com/faucet and swap it for token 0.0.5449 on https://testnet.saucerswap.finance ..."}
 
    Could not fund the buyer, and it holds 0 of 0.0.5449.
-   Operator 0.0.8569027 holds 14.260022 USDC (token 0.0.5449) on testnet, which is not enough
-   to send the buyer the 64.000000 this top-up needs. …
+   Operator 0.0.8569027 holds 0.120000 USDC (token 0.0.5449) on testnet, which is not enough
+   to send the buyer the 2.000000 this top-up needs. …
 ```
 
 Confirm the settlement yourself:
@@ -415,8 +423,8 @@ $ curl -s 'https://testnet.mirrornode.hedera.com/api/v1/transactions/0.0.1076128
   "result": "SUCCESS",
   "name": "CRYPTOTRANSFER",
   "token_transfers": [
-    { "token_id": "0.0.5449", "account": "0.0.8569027",  "amount": 12000000,  "is_approval": false },
-    { "token_id": "0.0.5449", "account": "0.0.10761282", "amount": -12000000, "is_approval": false }
+    { "token_id": "0.0.5449", "account": "0.0.8569027",  "amount": 500000,  "is_approval": false },
+    { "token_id": "0.0.5449", "account": "0.0.10761282", "amount": -500000, "is_approval": false }
   ]
 }
 ```
@@ -438,7 +446,7 @@ hand:
 ```console
 $ curl -s -X POST -H 'Content-Type: application/json' \
     -d '{"accountId":"0.0.10761282","product":"hashgraph-mug"}' http://localhost:3000/api/testnet/fund
-{"funded":true,"accountId":"0.0.10761282","tokenId":"0.0.5449","amount":"12000000","needed":"12000000"}
+{"funded":true,"accountId":"0.0.10761282","tokenId":"0.0.5449","amount":"500000","needed":"500000"}
 ```
 
 Say which item you are funding for — `product`, or `amount` in base units. Without it the
@@ -456,12 +464,12 @@ before it can hold it, so a fresh buyer has nothing to spend and no way to recei
 
 ```
 POST /api/testnet/fund
-{ "accountId": "0.0.10761282", "amount": "12000000", "associateTransaction": "<base64, optional>" }
+{ "accountId": "0.0.10761282", "amount": "500000", "associateTransaction": "<base64, optional>" }
 ```
 
 - `accountId` — the buyer, as `0.0.10761282`. It must not be the operator (`400 self_funding`).
 - `amount` — USDC **base units** the buyer is about to spend, as digits in a string
-  (`"12000000"` is 12.00 USDC). Capped at the priciest item in the catalogue.
+  (`"500000"` is 0.50 USDC). Capped at the priciest item in the catalogue.
 - `product` — a catalogue id (`"hashgraph-mug"`) instead of `amount`, if you would rather the
   route do the pricing.
 - `associateTransaction` — a base64 `TokenAssociateTransaction` **signed by the buyer**, which
@@ -474,8 +482,8 @@ It tops the buyer up to whatever was asked for, sending only the shortfall, and 
 the operator is not configured, `403` off testnet.
 
 **Say what is being bought.** With neither `amount` nor `product` the route has to assume the
-priciest item in the catalogue (64.00 USDC), because it has nothing else to go on — and an
-operator that could comfortably cover a $12.00 mug is then refused for want of 64. Both
+priciest item in the catalogue (2.00 USDC), because it has nothing else to go on — and an
+operator that could comfortably cover a $0.50 mug is then refused for want of 64. Both
 in-tree callers (`lib/hederaBuyer.ts` and `scripts/e2e-charge.mjs`) pass the charge amount; a
 hand-written `curl` should too.
 
@@ -485,8 +493,8 @@ over the operator's balance, not a mint. When it does not, the route says so by 
 ```console
 $ curl -s -X POST -H 'Content-Type: application/json' \
     -d '{"accountId":"0.0.10775466"}' http://localhost:3000/api/testnet/fund
-{"error":"operator_underfunded","detail":"Operator 0.0.8569027 holds 14.260022 USDC (token 0.0.5449)
- on testnet, which is not enough to send the buyer the 64.000000 this top-up needs. Get testnet HBAR
+{"error":"operator_underfunded","detail":"Operator 0.0.8569027 holds 0.120000 USDC (token 0.0.5449)
+ on testnet, which is not enough to send the buyer the 2.000000 this top-up needs. Get testnet HBAR
  from https://portal.hedera.com/faucet and swap it for token 0.0.5449 on
  https://testnet.saucerswap.finance (the USDC/HBAR pool). Circle's faucet at
  https://faucet.circle.com dispenses 0.0.429274 instead, a different testnet USDC this template
@@ -614,7 +622,7 @@ payment-required: eyJ4NDAyVmVyc2lvbiI6MiwiZXJyb3IiOiJwYXltZW50IGlzIHJlcXVpcmVkIi
 {"x402Version":2,"error":"payment is required",
  "resource":{"url":"http://localhost:3000/api/x402?product=hbar-tee",
  "description":"402 Checkout - HBAR Logo Tee","mimeType":"application/json","serviceName":"402 Checkout"},
- "accepts":[{"scheme":"exact","network":"hedera:testnet","amount":"24000000","asset":"0.0.5449",
+ "accepts":[{"scheme":"exact","network":"hedera:testnet","amount":"750000","asset":"0.0.5449",
  "payTo":"0.0.0","maxTimeoutSeconds":30,"extra":{}}],"demo":true}
 ```
 

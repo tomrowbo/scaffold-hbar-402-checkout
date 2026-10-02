@@ -25,7 +25,7 @@ export const dynamic = "force-dynamic";
 
 const USDC_SCALE = 10 ** USDC_DECIMALS;
 
-/** Decimal string for an amount in USDC base units, e.g. `12000000` → `12.000000`. */
+/** Decimal string for an amount in USDC base units, e.g. `500000` → `0.500000`. */
 function formatUsdc(baseUnits: bigint | number): string {
   return (Number(baseUnits) / USDC_SCALE).toFixed(USDC_DECIMALS);
 }
@@ -71,7 +71,7 @@ async function usdcBalance(accountId: string): Promise<bigint> {
 
 type FundBody = {
   accountId?: string;
-  /** USDC base units the buyer is about to spend, as a decimal string (`"12000000"`). */
+  /** USDC base units the buyer is about to spend, as a decimal string (`"500000"`). */
   amount?: string;
   /** Catalogue id, as an alternative to `amount` — the route prices it. */
   product?: string;

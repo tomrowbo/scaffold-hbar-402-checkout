@@ -22,7 +22,7 @@ export type SettledOrder = {
   /** How it settled: MPP's `"hedera"` or `"stripe"`, or `"x402"` for the x402 rail. */
   method: OrderMethod;
   productId: string;
-  /** Human-readable price as shown in the catalogue, e.g. `"24.00"`. */
+  /** Human-readable price as shown in the catalogue, e.g. `"0.75"`. */
   amountUsd: string;
   /** Base-unit amount actually transferred, as recorded in the challenge. */
   amountBaseUnits: string;

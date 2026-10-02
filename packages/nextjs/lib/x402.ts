@@ -197,7 +197,7 @@ export function settlePayment(
 
 /**
  * Scales a decimal money string to integer base units by moving digits, never through a
- * float: `("24.00", 6)` → `"24000000"`. Throws on a malformed price or one more precise than
+ * float: `("0.75", 6)` → `"750000"`. Throws on a malformed price or one more precise than
  * the token — both are catalogue bugs, not runtime conditions.
  */
 export function toBaseUnits(amount: string, decimals: number): string {

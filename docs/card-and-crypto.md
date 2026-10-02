@@ -86,14 +86,14 @@ gives every method the same request options; here the Hedera offer needs
 `currency: "0.0.5449", decimals: 6` and the card offer needs `currency: "usd", decimals: 2`.
 `compose` gives each method its own.
 
-The result on the wire, for a $24.00 item:
+The result on the wire, for a $0.75 item:
 
 ```json
-{ "amount": "24000000", "currency": "0.0.5449", "methodDetails": { "chainId": 296 }, "recipient": "0.0.…" }
+{ "amount": "750000", "currency": "0.0.5449", "methodDetails": { "chainId": 296 }, "recipient": "0.0.…" }
 { "amount": "2400",     "currency": "usd",      "methodDetails": { "networkId": "…", "paymentMethodTypes": ["card"] } }
 ```
 
-Both scaled from the *same* catalogue string, `"24.00"`. Prices in `lib/products.ts` are
+Both scaled from the *same* catalogue string, `"0.75"`. Prices in `lib/products.ts` are
 decimal strings and never numbers — mppx scales each offer by its own `decimals`, and no
 float arithmetic touches money anywhere in the path.
 
