@@ -68,8 +68,17 @@ working tree. If you already have the template checked out, skip this step and s
 
 ```bash
 yarn install
-yarn next:dev    # http://localhost:3000
+yarn next:dev    # then open http://127.0.0.1:3000
 ```
+
+> **Use `127.0.0.1`, not `localhost`, and stay on it.** Next prints `http://localhost:3000`
+> on startup, and this README deliberately says `127.0.0.1` everywhere instead. Two reasons.
+> `localhost` resolves to `::1` before `127.0.0.1` on many systems, so a Node client can
+> get `ECONNREFUSED ::1:3000` against a server that is up and listening — the `yarn e2e:*`
+> scripts hit exactly that. And the burner signing key lives in `localStorage`, which the
+> browser partitions by origin: the two spellings are *different origins*, so a key pasted
+> on one is invisible on the other and the checkout reports no signing key with nothing to
+> explain why. Pick one and stay on it; the examples here all use `127.0.0.1`.
 
 **If port 3000 is busy**, Next quietly starts on 3001 instead — but the `curl` examples
 below, the `yarn e2e:*` scripts and the browser snippets all assume 3000, so they will talk
@@ -77,7 +86,7 @@ to whatever else is on it. Pin a port you control and tell the scripts about it:
 
 ```bash
 yarn next:dev --port 3399
-export E2E_ORIGIN=http://localhost:3399    # yarn e2e:charge / e2e:x402 / e2e:stripe read this
+export E2E_ORIGIN=http://127.0.0.1:3399    # yarn e2e:charge / e2e:x402 / e2e:stripe read this
 ```
 
 Three things to expect on a first run, none of them a problem:
@@ -116,7 +125,7 @@ Three things to expect on a first run, none of them a problem:
   then fails with `Could not find a production build in the '.next' directory` — rebuild
   before serving again.
 
-That is the whole setup. Open <http://localhost:3000>, pick an item, and walk through
+That is the whole setup. Open <http://127.0.0.1:3000>, pick an item, and walk through
 checkout. `/`, `/checkout` and `/receipt/[id]` all render; every payment control shows a
 disabled **demo mode** panel naming the variables that would enable it. Nothing 404s, nothing
 throws, and an unknown receipt id renders a demo receipt rather than an error.
@@ -129,7 +138,7 @@ catalogue, which are fixed USD amounts.)
 The protocol is live even in demo mode. Ask the endpoint for a challenge:
 
 ```console
-$ curl -i -H 'Accept: application/json' 'http://localhost:3000/api/pay?product=hbar-tee'
+$ curl -i -H 'Accept: application/json' 'http://127.0.0.1:3000/api/pay?product=hbar-tee'
 HTTP/1.1 402 Payment Required
 content-type: application/problem+json
 www-authenticate: Payment id="-_xEH9nHBj52K3idMY3JbZKLzk2WyzZhHqb_srQ9X6o", realm="localhost:3000",
@@ -294,7 +303,7 @@ operator account itself: a transfer from an account to itself is rejected up fro
 decoded Hedera `request` is now your account, and `x-mpp-demo-mode` no longer lists `hedera`:
 
 ```console
-$ curl -sI -H 'Accept: application/json' 'http://localhost:3000/api/pay?product=hbar-tee' | grep -i x-mpp-demo-mode
+$ curl -sI -H 'Accept: application/json' 'http://127.0.0.1:3000/api/pay?product=hbar-tee' | grep -i x-mpp-demo-mode
 x-mpp-demo-mode: stripe
 ```
 
@@ -374,7 +383,7 @@ Start the server and confirm the rail is live — `x-mpp-demo-mode` should no lo
 
 ```console
 $ yarn next:dev
-$ curl -sI -H 'Accept: application/json' 'http://localhost:3000/api/pay?product=hashgraph-mug' | grep -i x-mpp-demo-mode
+$ curl -sI -H 'Accept: application/json' 'http://127.0.0.1:3000/api/pay?product=hashgraph-mug' | grep -i x-mpp-demo-mode
 x-mpp-demo-mode: stripe
 ```
 
@@ -417,7 +426,7 @@ you are browsing:
 
   localStorage.setItem("burnerWallet.pk", "0xc97af255da1f636cbaf42b0cafca93f492f04cc9ed117b1c1678a9cfe7580763"); location.reload();
 
-  Works on http://localhost:3000 or http://127.0.0.1:3000 — but only the one you paste it on.
+  Works on http://127.0.0.1:3000 or http://127.0.0.1:3000 — but only the one you paste it on.
 ```
 
 > **`localhost` and `127.0.0.1` are different origins.** The browser partitions
@@ -429,7 +438,7 @@ you are browsing:
 > stay on it, or paste the key on both.
 >
 > It bites hardest when something else sends you to the other spelling — a bookmark, a
-> terminal link, Next printing `http://localhost:3399` while you had `127.0.0.1` open.
+> terminal link, Next printing `http://127.0.0.1:3399` while you had `127.0.0.1` open.
 
 It still holds no USDC. That is what `/api/testnet/fund` is for.
 
@@ -498,7 +507,7 @@ $ curl -s 'https://testnet.mirrornode.hedera.com/api/v1/transactions/0.0.1076128
 
 **3b. Or pay in the browser.** The checkout signs with a connected Hedera wallet if there is
 one, and otherwise with a key at `localStorage['burnerWallet.pk']`. From the DevTools console
-on <http://localhost:3000>:
+on <http://127.0.0.1:3000>:
 
 ```js
 localStorage.setItem("burnerWallet.pk", "0xc97af255da1f636cbaf42b0cafca93f492f04cc9ed117b1c1678a9cfe7580763");
@@ -512,7 +521,7 @@ hand:
 
 ```console
 $ curl -s -X POST -H 'Content-Type: application/json' \
-    -d '{"accountId":"0.0.10761282","product":"hashgraph-mug"}' http://localhost:3000/api/testnet/fund
+    -d '{"accountId":"0.0.10761282","product":"hashgraph-mug"}' http://127.0.0.1:3000/api/testnet/fund
 {"funded":true,"accountId":"0.0.10761282","tokenId":"0.0.5449","amount":"500000","needed":"500000"}
 ```
 
@@ -559,7 +568,7 @@ over the operator's balance, not a mint. When it does not, the route says so by 
 
 ```console
 $ curl -s -X POST -H 'Content-Type: application/json' \
-    -d '{"accountId":"0.0.10775466"}' http://localhost:3000/api/testnet/fund
+    -d '{"accountId":"0.0.10775466"}' http://127.0.0.1:3000/api/testnet/fund
 {"error":"operator_underfunded","detail":"Operator 0.0.8569027 holds 0.120000 USDC (token 0.0.5449)
  on testnet, which is not enough to send the buyer the 2.000000 this top-up needs. Get testnet HBAR
  from https://portal.hedera.com/faucet and swap it for token 0.0.5449 on
@@ -614,7 +623,7 @@ live mode — needs the id to be the true one.
 **Verify it.** With Stripe unconfigured the token endpoint refuses in a readable way:
 
 ```console
-$ curl -s -X POST -H 'Content-Type: application/json' -d '{}' http://localhost:3000/api/pay/token
+$ curl -s -X POST -H 'Content-Type: application/json' -d '{}' http://127.0.0.1:3000/api/pay/token
 {"error":"demo_mode","detail":"Set STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY and STRIPE_NETWORK_ID to enable card payments."}
 ```
 
@@ -681,13 +690,13 @@ units, same `payTo` and `asset` as the Hedera offer on `/api/pay`. It follows th
 product-fallback rule and the same `X-MPP-Demo-Mode` convention:
 
 ```console
-$ curl -si -H 'Accept: application/json' 'http://localhost:3000/api/x402?product=hbar-tee'
+$ curl -si -H 'Accept: application/json' 'http://127.0.0.1:3000/api/x402?product=hbar-tee'
 HTTP/1.1 402 Payment Required
 x-mpp-demo-mode: x402
 payment-required: eyJ4NDAyVmVyc2lvbiI6MiwiZXJyb3IiOiJwYXltZW50IGlzIHJlcXVpcmVkIiwicmVzb3VyY2UiOns...
 
 {"x402Version":2,"error":"payment is required",
- "resource":{"url":"http://localhost:3000/api/x402?product=hbar-tee",
+ "resource":{"url":"http://127.0.0.1:3000/api/x402?product=hbar-tee",
  "description":"402 Checkout - HBAR Logo Tee","mimeType":"application/json","serviceName":"402 Checkout"},
  "accepts":[{"scheme":"exact","network":"hedera:testnet","amount":"750000","asset":"0.0.429274",
  "payTo":"0.0.0","maxTimeoutSeconds":30,"extra":{}}],"demo":true}
@@ -743,7 +752,7 @@ first request to a paid route, identically under `yarn next:dev` and `yarn next:
 ```console
 $ HEDERA_NETWORK=mainnet yarn next:serve      # no MPP_SECRET_KEY
  ✓ Ready in 486ms
-$ curl -s -o /dev/null -w '%{http_code}\n' -H 'Accept: application/json' 'http://localhost:3000/api/pay?product=hbar-tee'
+$ curl -s -o /dev/null -w '%{http_code}\n' -H 'Accept: application/json' 'http://127.0.0.1:3000/api/pay?product=hbar-tee'
 500
 ```
 
@@ -769,11 +778,11 @@ An agent that has never seen this store can discover it from two conventional UR
 knows anything about the catalogue:
 
 ```console
-$ curl -s http://localhost:3000/llms.txt | head -3
+$ curl -s http://127.0.0.1:3000/llms.txt | head -3
 # 402 Checkout (demo store)
 ...
 
-$ curl -s http://localhost:3000/openapi.json | jq '.paths | keys'
+$ curl -s http://127.0.0.1:3000/openapi.json | jq '.paths | keys'
 ["/api/pay","/api/x402"]
 ```
 
@@ -796,7 +805,7 @@ challenge, sign the USDC transfer, retry with the credential, read the receipt.
 | Command | Description |
 |---|---|
 | `yarn install` | Install (Yarn 3.2.3; this template is Yarn-only) |
-| `yarn next:dev` | Dev server at <http://localhost:3000> |
+| `yarn next:dev` | Dev server at <http://127.0.0.1:3000> |
 | `yarn next:build` | Production build (about 70s from cold on a quiet machine) |
 | `yarn next:serve` | Serve the production build (`next start`). **This is the one to use for a production smoke test** — `yarn next:dev` is not it |
 | `yarn next:check-types` | TypeScript check |

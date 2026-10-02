@@ -9,7 +9,7 @@ Use the package manager this project was created with (`packageManager` in the r
 ## Commands
 
 ```bash
-yarn next:dev           # http://localhost:3000
+yarn next:dev           # http://127.0.0.1:3000
 yarn next:build
 yarn next:check-types
 yarn lint               # same as yarn next:lint
@@ -106,6 +106,15 @@ Import app code with the `~~` alias:
 import { useTargetNetwork } from "~~/hooks/scaffold-hbar";
 ```
 
+## Local host
+
+Use `127.0.0.1`, never `localhost`. `localhost` resolves to `::1` before `127.0.0.1` on many
+systems, so a Node client can get `ECONNREFUSED ::1:<port>` against a server that is up and
+listening — the `yarn e2e:*` scripts hit exactly that. The browser also treats the two
+spellings as different origins, which hides the burner key in `localStorage` from whichever
+one you are not on, and the checkout then reports no signing key with nothing to explain it.
+Every URL in this repo's docs and scripts uses `127.0.0.1`; keep it that way.
+
 ## Networks
 
 `packages/nextjs/scaffold.config.ts` — `hederaTestnet` and `hedera` mainnet. RPC overrides via `NEXT_PUBLIC_HEDERA_*_RPC_URL`. Default polling interval: 10s.
@@ -156,7 +165,7 @@ import { Challenge, Credential } from "mppx";
 import { Attribution } from "mppx-hedera";
 
 const [accountId, privateKey, product = "hashgraph-mug"] = process.argv.slice(2);
-const endpoint = `http://localhost:3000/api/pay?product=${product}`;
+const endpoint = `http://127.0.0.1:3000/api/pay?product=${product}`;
 
 // 1. Ask for the resource and get challenged.
 const challenged = await fetch(endpoint, { headers: { Accept: "application/json" } });

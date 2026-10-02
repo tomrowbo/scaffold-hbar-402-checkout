@@ -13,7 +13,7 @@ import { Attribution } from "mppx-hedera";
 const MIRROR = "https://testnet.mirrornode.hedera.com";
 const BURNER_PK = process.argv[2];
 const PRODUCT = process.argv[3] ?? "hashgraph-mug";
-const ORIGIN = process.env.E2E_ORIGIN ?? "http://localhost:3000";
+const ORIGIN = process.env.E2E_ORIGIN?.trim() || "http://127.0.0.1:3000";
 const ENDPOINT = `${ORIGIN}/api/pay?product=${PRODUCT}`;
 
 const b64 = bytes => Buffer.from(bytes).toString("base64");

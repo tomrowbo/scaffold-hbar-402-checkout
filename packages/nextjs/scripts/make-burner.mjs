@@ -72,8 +72,8 @@ console.log(`key       ${burner.toStringRaw()}`);
 // Follow E2E_ORIGIN like the e2e scripts do. These lines are meant to be pasted, and one of
 // them pastes a private key into a browser console — naming the wrong port tells the reader
 // to hand that key to whatever else is listening on 3000.
-const origin = process.env.E2E_ORIGIN ?? "http://localhost:3000";
-const originPrefix = origin === "http://localhost:3000" ? "" : `E2E_ORIGIN=${origin} `;
+const origin = process.env.E2E_ORIGIN?.trim() || "http://127.0.0.1:3000";
+const originPrefix = origin === "http://127.0.0.1:3000" ? "" : `E2E_ORIGIN=${origin} `;
 
 // localStorage is partitioned per origin, and `localhost` and `127.0.0.1` are different
 // origins even on the same port. Pasting the key under one and browsing the other leaves the
@@ -106,6 +106,6 @@ if (sibling) {
 }
 if (!process.env.E2E_ORIGIN) {
   console.log("");
-  console.log("  (Server on another port? Re-run with E2E_ORIGIN=http://localhost:<port> to");
+  console.log("  (Server on another port? Re-run with E2E_ORIGIN=http://127.0.0.1:<port> to");
   console.log("   print commands that point at it.)");
 }

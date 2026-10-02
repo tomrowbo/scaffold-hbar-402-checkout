@@ -21,7 +21,7 @@ worth reading.
 Captured from this store, running with no credentials configured:
 
 ```console
-$ curl -i -H 'Accept: application/json' 'http://localhost:3000/api/pay?product=hbar-tee'
+$ curl -i -H 'Accept: application/json' 'http://127.0.0.1:3000/api/pay?product=hbar-tee'
 HTTP/1.1 402 Payment Required
 content-type: application/problem+json
 www-authenticate: Payment id="-_xEH9…X6o", realm="localhost:3000", method="hedera",
@@ -54,7 +54,7 @@ facilitator configured the body also carries `"demo": true`, and the response ca
   "x402Version": 2,
   "error": "payment is required",
   "resource": {
-    "url": "http://localhost:3000/api/x402?product=hbar-tee",
+    "url": "http://127.0.0.1:3000/api/x402?product=hbar-tee",
     "description": "402 Checkout - HBAR Logo Tee",
     "mimeType": "application/json",
     "serviceName": "402 Checkout"

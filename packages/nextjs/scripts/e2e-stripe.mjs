@@ -13,7 +13,7 @@
 // key — a live key mints SPTs through Onelink and charges a real card.
 import { Challenge, Credential } from "mppx";
 
-const ORIGIN = process.env.E2E_ORIGIN ?? "http://localhost:3000";
+const ORIGIN = process.env.E2E_ORIGIN?.trim() || "http://127.0.0.1:3000";
 const PRODUCT = process.argv[2] ?? "hashgraph-mug";
 const ENDPOINT = `${ORIGIN}/api/pay?product=${PRODUCT}`;
 // Stripe's canonical test card (4242…4242). Test-mode only.

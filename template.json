@@ -39,7 +39,7 @@
             },
             {
               "label": "Browse the demo",
-              "text": "Open http://localhost:3000 and go through checkout. Every rail renders in demo mode until you configure it."
+              "text": "Open http://127.0.0.1:3000 and go through checkout. Every rail renders in demo mode until you configure it."
             },
             {
               "label": "Enable Hedera USDC",
