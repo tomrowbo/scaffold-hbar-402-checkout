@@ -144,10 +144,45 @@ async function settleWithWallet({
   try {
     const transaction = buildTransfer({ client, payer: wallet.accountId, request, amount, tokenId, memo });
     onProgress?.("Waiting for the wallet to sign the transfer…");
-    const transactionId = await wallet.execute(transaction);
+    const transactionId = await withWalletTimeout(wallet.execute(transaction));
     return { payload: { type: "hash" as const, transactionId }, payer: wallet.accountId };
   } finally {
     client.close();
+  }
+}
+
+/** How long to wait for the wallet before giving up. Long enough for a human to read a
+ *  prompt and approve it, short enough that a wallet which never answers does not hang the
+ *  page indefinitely. */
+const WALLET_SIGN_TIMEOUT_MS = 90_000;
+
+/**
+ * A wallet that rejects a transfer *before* broadcasting — insufficient token balance is a
+ * wallet-side pre-check, not a network result — sometimes fails without sending any JSON-RPC
+ * reply at all. There is nothing on chain in that case, so no Mirror Node record and no
+ * webhook to observe: the unsent reply is the only signal, and awaiting it forever left the
+ * button sitting on "Waiting for the wallet to sign the transfer…" with no way to tell a
+ * slow human from a dead request.
+ */
+async function withWalletTimeout(pending: Promise<string>): Promise<string> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const expiry = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () =>
+        reject(
+          new HederaChargeError(
+            "The wallet never answered the signing request.",
+            "Check the wallet — it may have rejected the transfer without telling this page, " +
+              "which is what an insufficient token balance usually looks like. Nothing was sent on chain.",
+          ),
+        ),
+      WALLET_SIGN_TIMEOUT_MS,
+    );
+  });
+  try {
+    return await Promise.race([pending, expiry]);
+  } finally {
+    clearTimeout(timer);
   }
 }
 
