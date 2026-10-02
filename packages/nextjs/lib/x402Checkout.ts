@@ -22,22 +22,14 @@
  * sponsored fee payer, and WalletConnect's Hedera methods sign-and-execute rather than
  * hand back signed bytes. A burner key is the only signer this rail can drive from a page.
  */
-import {
-  type ChargeProgress,
-  CheckoutError,
-  ensureBuyerFunded,
-  lookupAccount,
-  parseBurnerKey,
-  readBurnerKey,
-} from "./hederaBuyer";
+// Only the SDK-free half — the wallet signs, so nothing here needs @hiero-ledger/sdk and the
+// buyer is never funded from the operator: they pay with what the wallet holds.
+import { type ChargeProgress, CheckoutError } from "./checkoutCommon";
+import { type WalletTransactionSigner, createWalletHederaSigner } from "./x402WalletSigner";
 import { decodePaymentRequiredHeader } from "@x402/core/http";
 import type { PaymentRequirements } from "@x402/core/types";
 import { wrapFetchWithPayment, x402Client } from "@x402/fetch";
-import { createClientHederaSigner } from "@x402/hedera";
 import { ExactHederaScheme } from "@x402/hedera/exact/client";
-
-/** CAIP-2, not the bare "testnet": `assertSupportedHederaNetwork` rejects the latter. */
-const X402_NETWORK = "hedera:testnet";
 
 export class X402ChargeError extends CheckoutError {}
 
@@ -53,9 +45,11 @@ export type X402Success = {
 export type PayWithX402Options = {
   productId: string;
   onProgress?: ChargeProgress;
+  /** The connected wallet. x402 needs a signer that does not submit — see x402WalletSigner. */
+  wallet: { provider: WalletTransactionSigner; accountId: string; signerAccountId: string };
 };
 
-export async function payWithX402({ productId, onProgress }: PayWithX402Options): Promise<X402Success> {
+export async function payWithX402({ productId, wallet, onProgress }: PayWithX402Options): Promise<X402Success> {
   const endpoint = `/api/x402?product=${encodeURIComponent(productId)}`;
 
   onProgress?.("Requesting an x402 challenge…");
@@ -79,20 +73,7 @@ export async function payWithX402({ productId, onProgress }: PayWithX402Options)
   const offer = decodePaymentRequiredHeader(header).accepts[0] as PaymentRequirements | undefined;
   if (!offer) throw new X402ChargeError("The x402 challenge advertised no payment requirements.");
 
-  const rawKey = readBurnerKey();
-  if (!rawKey) {
-    throw new X402ChargeError(
-      "No Hedera signer available.",
-      "Inject a test key at localStorage['burnerWallet.pk'] — x402's exact scheme signs the " +
-        "transfer without submitting it, which a connected wallet cannot do.",
-    );
-  }
-
-  const key = parseBurnerKey(rawKey);
-  onProgress?.("Resolving the buyer account…");
-  const account = await lookupAccount(`0x${key.publicKey.toEvmAddress()}`);
-  const payer = account.account;
-
+  const payer = wallet.accountId;
   if (payer === offer.payTo) {
     throw new X402ChargeError(
       `Buyer and merchant are the same account (${payer}).`,
@@ -100,17 +81,10 @@ export async function payWithX402({ productId, onProgress }: PayWithX402Options)
     );
   }
 
-  await ensureBuyerFunded({ key, payer, account, tokenId: offer.asset, amount: BigInt(offer.amount), onProgress });
-
-  // `@x402/hedera` pins its own copy of `@hiero-ledger/sdk` (2.85.0, deliberately, in lockstep
-  // with `@hiero-ledger/proto` — see its package.json), so its `PrivateKey` is a nominally
-  // distinct class from the app's even though it is the same code. The key value is fine; only
-  // TypeScript's private-field nominality objects, so the cast is to that package's own type.
-  const signerKey = key as unknown as Parameters<typeof createClientHederaSigner>[1];
   const client = new x402Client();
   client.register(
     "hedera:*",
-    new ExactHederaScheme(createClientHederaSigner(payer, signerKey, { network: X402_NETWORK })),
+    new ExactHederaScheme(createWalletHederaSigner(wallet.provider, payer, wallet.signerAccountId)),
   );
   // The buyer's own spend controls, not something the server asked for. @x402/core caps a
   // single payment at $1 by default, and the catalogue goes above that, so the cap has to be
@@ -125,8 +99,12 @@ export async function payWithX402({ productId, onProgress }: PayWithX402Options)
   // `fetch` must stay bound to the window, or the browser rejects the detached call.
   const payFetch = wrapFetchWithPayment(globalThis.fetch.bind(globalThis), client);
 
-  onProgress?.("Signing the transfer and settling through the facilitator…");
+  // Matches the Hedera rail's wording, because from here the buyer does the same thing on
+  // both: approve a prompt in their wallet. The facilitator's part comes after, and saying so
+  // up front described the plumbing rather than what the buyer has to do next.
+  onProgress?.("Waiting for the wallet to sign the transfer…");
   const paidResponse = await payFetch(endpoint, { headers: { Accept: "application/json" } });
+  onProgress?.("Settling through the facilitator…");
 
   if (paidResponse.status !== 200) {
     const detail = await paidResponse.text();

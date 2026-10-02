@@ -71,9 +71,11 @@ async function topUpBuyer(args: {
   });
   const body = (await response.json().catch(() => ({}))) as { error?: string; detail?: string };
   if (!response.ok) {
+    // The server's detail is already a complete sentence aimed at a human, so do not wrap it
+    // in a second one. The hint stays short: anything longer belongs in the README.
     throw new CheckoutError(
-      `Could not fund the test buyer: ${body.detail ?? body.error ?? response.statusText}`,
-      `Send token ${args.tokenId} to ${args.accountId} on testnet, or set HEDERA_OPERATOR_ID and HEDERA_OPERATOR_KEY.`,
+      body.detail ?? body.error ?? `Could not fund the test buyer (${response.statusText}).`,
+      `Nothing was charged. See "Getting testnet USDC" in the README.`,
     );
   }
 }

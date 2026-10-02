@@ -17,22 +17,14 @@
  * Account resolution, the burner key and the testnet top-up are shared with the x402 rail
  * and live in `lib/hederaBuyer.ts`.
  */
-import {
-  type ChargeProgress,
-  CheckoutError,
-  HEDERA_NETWORK,
-  ensureBuyerFunded,
-  lookupAccount,
-  parseBurnerKey,
-  readBurnerKey,
-  toBase64,
-} from "./hederaBuyer";
+// The wallet is the only browser signer now, so nothing here funds a buyer or reads a local
+// key — only the SDK-free helpers are needed.
+import { type ChargeProgress, CheckoutError, HEDERA_NETWORK } from "./checkoutCommon";
 import { AccountId, Client, TokenId, type Transaction, TransactionId, TransferTransaction } from "@hiero-ledger/sdk";
 import { Challenge, Credential } from "mppx";
 import { Attribution } from "mppx-hedera";
 
-export { hasBurnerSigner, readBurnerKey } from "./hederaBuyer";
-export type { ChargeProgress } from "./hederaBuyer";
+export type { ChargeProgress } from "./checkoutCommon";
 
 export type ChargeSuccess = {
   /** Null only if the server settled the charge but could not resolve the order behind it. */
@@ -94,9 +86,13 @@ export async function payWithHedera({ productId, wallet, onProgress }: PayWithHe
     serverId: challenge.realm ?? "",
   });
 
-  const payload = wallet
-    ? await settleWithWallet({ wallet, request, amount, tokenId, memo, onProgress })
-    : await settleWithBurner({ request, amount, tokenId, memo, onProgress });
+  if (!wallet) {
+    throw new HederaChargeError(
+      "Connect a Hedera wallet to pay.",
+      "The wallet signs and submits the USDC transfer itself; nothing is stored in this browser.",
+    );
+  }
+  const payload = await settleWithWallet({ wallet, request, amount, tokenId, memo, onProgress });
 
   onProgress?.("Confirming settlement on the Mirror Node…");
   const credential = Credential.from({
@@ -194,36 +190,6 @@ async function withWalletTimeout(pending: Promise<string>): Promise<string> {
     return await Promise.race([pending, expiry]);
   } finally {
     clearTimeout(timer);
-  }
-}
-
-/** Pull mode: sign locally with the injected burner key and let the server submit. */
-async function settleWithBurner({ request, amount, tokenId, memo, onProgress }: SettleArgs) {
-  const rawKey = readBurnerKey();
-  if (!rawKey) {
-    throw new HederaChargeError(
-      "No Hedera signer available.",
-      "Connect a Hedera wallet, or inject a test key at localStorage['burnerWallet.pk'].",
-    );
-  }
-
-  const key = parseBurnerKey(rawKey);
-  onProgress?.("Resolving the buyer account…");
-  const evmAddress = `0x${key.publicKey.toEvmAddress()}`;
-  const account = await lookupAccount(evmAddress);
-  const payer = account.account;
-
-  await ensureBuyerFunded({ key, payer, account, tokenId, amount, onProgress });
-
-  const client = Client.forTestnet();
-  client.setOperator(AccountId.fromString(payer), key);
-  try {
-    onProgress?.("Signing the USDC transfer…");
-    const transaction = buildTransfer({ client, payer, request, amount, tokenId, memo });
-    const signed = await transaction.sign(key);
-    return { payload: { type: "transaction" as const, transaction: toBase64(signed.toBytes()) }, payer };
-  } finally {
-    client.close();
   }
 }
 

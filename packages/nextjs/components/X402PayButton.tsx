@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useHederaSigner } from "~~/hooks/useHederaSigner";
 // SDK-free on purpose — see the note in HederaPayButton. `lib/x402Checkout` brings the
 // whole @x402 client stack (viem, the Hedera signer) and loads on click instead.
-import { CheckoutError, hasBurnerSigner } from "~~/lib/checkoutCommon";
+import { CheckoutError } from "~~/lib/checkoutCommon";
+import { hederaCaipId } from "~~/utils/scaffold-hbar/hederaIdentity";
 
 type X402PayButtonProps = {
   productId: string;
@@ -21,30 +23,24 @@ type Status =
 /**
  * Drives the 402 → partially signed transfer → retry loop for the x402 rail.
  *
- * The twin of {@link HederaPayButton}, minus the wallet path: x402's `exact` scheme on
- * Hedera needs signed-but-unsubmitted bytes, so only the burner key at
- * `localStorage['burnerWallet.pk']` can sign it from a page (see `lib/x402Checkout.ts`).
+ * The twin of {@link HederaPayButton}. x402's `exact` scheme on Hedera needs a transfer that
+ * is signed but not submitted, because the facilitator sponsors the fee and so must appear in
+ * the transaction id. `hedera_signTransaction` does exactly that — it returns signed bytes
+ * and broadcasts nothing — so a connected wallet can pay this rail.
  */
 export const X402PayButton = ({ productId, priceUsd, enabled }: X402PayButtonProps) => {
   const router = useRouter();
   const [status, setStatus] = useState<Status>({ kind: "idle" });
-  const [burnerAvailable, setBurnerAvailable] = useState(false);
-  const [host, setHost] = useState("");
-
-  // localStorage is unavailable during SSR, so probe after mount to keep hydration stable.
-  // The host comes from the same effect: naming it is what makes the message actionable,
-  // because the key is stored per origin and `localhost` is not `127.0.0.1`.
-  useEffect(() => {
-    setBurnerAvailable(hasBurnerSigner());
-    setHost(window.location.host);
-  }, []);
+  const { provider, accountId } = useHederaSigner();
 
   const pay = useCallback(async () => {
     setStatus({ kind: "working", message: "Requesting an x402 challenge…" });
     try {
+      if (!provider || !accountId) throw new CheckoutError("Connect a Hedera wallet first.");
       const { payWithX402 } = await import("~~/lib/x402Checkout");
       const order = await payWithX402({
         productId,
+        wallet: { provider, accountId, signerAccountId: hederaCaipId(accountId) },
         onProgress: message => setStatus({ kind: "working", message }),
       });
       if (order.receiptUrl) {
@@ -64,7 +60,7 @@ export const X402PayButton = ({ productId, priceUsd, enabled }: X402PayButtonPro
         setStatus({ kind: "error", message: error instanceof Error ? error.message : String(error) });
       }
     }
-  }, [productId, router]);
+  }, [productId, router, provider, accountId]);
 
   const working = status.kind === "working";
 
@@ -73,7 +69,7 @@ export const X402PayButton = ({ productId, priceUsd, enabled }: X402PayButtonPro
       <button
         type="button"
         className="btn btn-primary btn-sm w-full"
-        disabled={!enabled || !burnerAvailable || working}
+        disabled={!enabled || !provider || !accountId || working}
         onClick={pay}
         data-testid="pay-with-x402"
       >
@@ -86,12 +82,8 @@ export const X402PayButton = ({ productId, priceUsd, enabled }: X402PayButtonPro
           about the facilitator: it is the buyer having no signer in this browser. Nothing
           else is needed either; the facilitator sponsors the fees and `/api/testnet/fund`
           tops the buyer up during the payment. */}
-      {enabled && !burnerAvailable && (
-        <p className="text-xs text-base-content/60 m-0">
-          No signing key for <code className="bg-base-300 px-1 py-0.5 rounded text-[11px]">{host}</code> — run{" "}
-          <code className="bg-base-300 px-1 py-0.5 rounded text-[11px]">yarn make:burner</code> and paste its line on
-          this page.
-        </p>
+      {enabled && (!provider || !accountId) && (
+        <p className="text-xs text-base-content/60 m-0">Connect a Hedera wallet to pay with USDC.</p>
       )}
 
       {status.kind === "working" && (

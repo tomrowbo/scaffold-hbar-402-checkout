@@ -53,17 +53,15 @@ function catalogueMaxBaseUnits(): number {
  * Kept in one place so this route, the browser panel and the README cannot drift apart.
  */
 const CIRCLE_TESTNET_USDC = "0.0.429274";
+/**
+ * One sentence, because this reaches a browser card as well as a terminal. The association
+ * requirement, Circle's rate limit and the SaucerSwap alternative are all in the README under
+ * "Getting testnet USDC" — repeating them here produced a paragraph nobody reads.
+ */
 const FUNDING_HELP =
   USDC_TOKEN_ID === CIRCLE_TESTNET_USDC
-    ? `Get ${USDC_TOKEN_ID} from https://faucet.circle.com — pick Hedera Testnet and send it to the ` +
-      `operator account. The operator must be able to receive the token: an account with ` +
-      `max_automatic_token_associations of 0 has to associate it first. Circle rate-limits repeat ` +
-      `requests, so if you need more, set HEDERA_USDC_TOKEN_ID=0.0.5449 and swap portal HBAR for that ` +
-      `token on https://testnet.saucerswap.finance instead.`
-    : `No faucet dispenses ${USDC_TOKEN_ID}. Get testnet HBAR from https://portal.hedera.com/faucet and ` +
-      `swap it for the token on https://testnet.saucerswap.finance (the USDC/HBAR pool). Circle's faucet ` +
-      `at https://faucet.circle.com dispenses ${CIRCLE_TESTNET_USDC} instead — unset HEDERA_USDC_TOKEN_ID ` +
-      `to settle that one and use their faucet directly.`;
+    ? `Fund it at https://faucet.circle.com — pick Hedera Testnet.`
+    : `No faucet dispenses ${USDC_TOKEN_ID}; swap portal HBAR for it on https://testnet.saucerswap.finance.`;
 
 /**
  * Current USDC balance per the Mirror Node. Indexing lags consensus, so a fresh top-up may
@@ -160,12 +158,12 @@ async function operatorUnderfunded(operatorId: string, needed: number): Promise<
   return Response.json(
     {
       error: "operator_underfunded",
+      // Two sentences: what is wrong, and the one thing to do about it. The caller already
+      // knows which purchase it attempted, and the per-amount top-up and the alternative
+      // token are both documented — a browser card is the wrong place to re-explain them.
       detail:
-        `Operator ${operatorId} holds ${balance} USDC (token ${USDC_TOKEN_ID}) on testnet, ` +
-        `which is not enough to send the buyer the ${formatUsdc(needed)} this top-up needs. ` +
-        `${FUNDING_HELP} ` +
-        `If the operator can cover the item being bought but not this top-up, post "product" ` +
-        `or "amount" so the faucet moves only what that purchase costs.`,
+        `The merchant account ${operatorId} holds ${balance} of ${USDC_TOKEN_ID}, ` +
+        `so it cannot lend the buyer the ${formatUsdc(needed)} this purchase needs. ${FUNDING_HELP}`,
     },
     { status: 502 },
   );

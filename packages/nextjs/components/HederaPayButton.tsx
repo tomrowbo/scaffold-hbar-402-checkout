@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Transaction } from "@hiero-ledger/sdk";
 import { useHederaSigner } from "~~/hooks/useHederaSigner";
 // SDK-free on purpose: importing these from `lib/hederaBuyer` would pull @hiero-ledger/sdk
 // into the first load of /checkout. The settlement code is imported on click instead.
-import { CheckoutError, hasBurnerSigner } from "~~/lib/checkoutCommon";
+import { CheckoutError } from "~~/lib/checkoutCommon";
 import { hederaCaipId } from "~~/utils/scaffold-hbar/hederaIdentity";
 
 type HederaPayButtonProps = {
@@ -24,17 +24,14 @@ type Status =
 /**
  * Drives the 402 → transfer → retry loop for the native Hedera rail.
  *
- * Signs with a connected wallet when there is one, and otherwise with the burner key
- * on-chain validation injects at `localStorage['burnerWallet.pk']`.
+ * Signs with the connected wallet, which submits the transfer itself (push mode) and returns
+ * the transaction id for the credential. There is no in-page key: the CLI scripts and the
+ * harness sign with their own, but a buyer uses a wallet.
  */
 export const HederaPayButton = ({ productId, priceUsd, enabled }: HederaPayButtonProps) => {
   const router = useRouter();
   const { provider, accountId } = useHederaSigner();
   const [status, setStatus] = useState<Status>({ kind: "idle" });
-  const [burnerAvailable, setBurnerAvailable] = useState(false);
-
-  // localStorage is unavailable during SSR, so probe after mount to keep hydration stable.
-  useEffect(() => setBurnerAvailable(hasBurnerSigner()), []);
 
   const pay = useCallback(async () => {
     setStatus({ kind: "working", message: "Requesting a payment challenge…" });
@@ -85,7 +82,7 @@ export const HederaPayButton = ({ productId, priceUsd, enabled }: HederaPayButto
     }
   }, [accountId, productId, provider, router]);
 
-  const hasSigner = Boolean(accountId) || burnerAvailable;
+  const hasSigner = Boolean(provider && accountId);
   const working = status.kind === "working";
 
   return (
