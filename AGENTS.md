@@ -2,7 +2,7 @@
 
 Briefing for coding agents in this app (Cursor, Claude Code, Codex). Claude Code loads it through `CLAUDE.md`.
 
-This is a **Hedera-native Next.js storefront** (402 Checkout). There is **no Solidity workspace** — payments are intended to settle through native Hedera services, Stripe and x402 rather than contracts.
+This is a **Hedera-native Next.js storefront** (402 Checkout). There is **no Solidity workspace**, deliberately: `template.json` declares `solidityFramework: "none"` and payments settle as native HTS transfers verified against the Mirror Node, so there is nothing for a contract to hold. Do not add one to satisfy a layout expectation — see "Why there is no Solidity package" in the README.
 
 Use the package manager this project was created with (`packageManager` in the root `package.json`). Examples use `yarn`.
 

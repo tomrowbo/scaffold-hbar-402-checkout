@@ -303,12 +303,13 @@ Precision here, because a comparison that overstates its own implementation is w
   protocol's own `PAYMENT-RESPONSE` header. `/receipt/[id]` renders it exactly as it renders an
   MPP charge, naming the rail as x402 and linking the transaction on HashScan.
 
-  What is **partial**: the x402 button has no connected-wallet path, where `HederaPayButton`
-  does. x402's `exact` scheme on Hedera needs a *partially signed* transaction whose
-  transaction id names the facilitator's sponsored fee payer, and WalletConnect's Hedera
-  methods sign and execute rather than return signed bytes — so from a page, only an injected
-  burner key can pay this rail. The order store is also still in-memory and per-process, for
-  both protocols.
+  Both rails are paid from a connected wallet. x402's `exact` scheme needs a *partially
+  signed* transaction whose transaction id names the facilitator's sponsored fee payer, so
+  `hedera_signAndExecuteTransaction` is no use — it submits, under the wallet's own id.
+  `hedera_signTransaction` returns signed bytes and broadcasts nothing, which is exactly
+  right, and `lib/x402WalletSigner.ts` wraps it as `@x402/hedera`'s `ClientHederaSigner`.
+
+  What is **partial**: the order store is in-memory and per-process, for both protocols.
 
   One thing a buyer has to opt into, and it is the client's policy rather than this server's:
   `@x402/core`'s default spend cap is $1 per payment, and the catalogue goes above it, so the

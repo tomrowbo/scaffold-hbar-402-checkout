@@ -24,9 +24,10 @@ an x402 challenge beside it.
 **All three are rails you can ship on**, not two rails and a demo. Each settles a real
 payment — a Stripe PaymentIntent, an HTS transfer confirmed on the Mirror Node, a facilitator
 settlement — records an order, and lands the buyer on the same `/receipt/[id]`. The one
-difference is that x402 has no connected-wallet path: its `exact` scheme on Hedera needs
-signed-but-unsubmitted transaction bytes, which a wallet will not hand back, so that rail
-signs with a local key. That is the protocol's constraint, not this template's.
+difference is in how the transfer is signed: x402's `exact` scheme needs a transfer that is
+signed but *not* submitted, because the facilitator sponsors the fee and so must be the
+account named in the transaction id. `hedera_signTransaction` returns exactly that, so both
+rails are paid from a connected wallet and the page holds no key.
 
 It boots with **no `.env` file and no environment variables at all**. Each rail switches
 itself on independently once its own variables are present, so a developer holding only
@@ -41,6 +42,53 @@ each answering the same `402`:
 
 That screenshot is the template with all three rails configured. Out of the box each card
 reads `demo mode` and names the variables that switch it on, and the store still runs.
+
+## Ecosystem integration
+
+Two integrations carry this template, and removing either one breaks the point of it.
+
+**Stripe, through `mppx/stripe`.** The card offer and the Hedera offer are advertised in a
+*single* `402`, which is what makes this more than two checkouts in a trench coat: one
+endpoint, one price, two ways to pay, and the buyer — human or agent — picks. Take Stripe
+out and there is no second rail to compare against, and no card path for the buyer who does
+not hold USDC.
+
+This is also the gap the template exists to close. `mppx/stripe` supports crypto networks
+`tempo`, `base` and `solana` — **Hedera is absent**. A merchant on Stripe's own machine
+payments rails cannot accept Hedera at all. The native rail here is
+[`mppx-hedera`](https://www.npmjs.com/package/mppx-hedera), the MPP payment method for
+Hedera, which I wrote and publish; this template is the reference integration for it.
+
+**The Ax402 facilitator**, at `testnet.facilitator.ax402.io`. x402's `exact` scheme on Hedera
+is gasless for the buyer: the facilitator verifies the signed transfer, sponsors the HBAR
+fee and broadcasts it. There is no way to implement that rail without a facilitator — the
+buyer cannot submit the transaction itself, because the fee payer is named inside the
+transaction id and has to be the facilitator's account. The template probes `/supported` at
+runtime and degrades the rail to demo mode rather than advertising an offer it cannot settle.
+
+Alongside them, [`docs/mpp-vs-x402.md`](docs/mpp-vs-x402.md) compares MPP and x402 line by
+line against the same product, the same amount and the same merchant account. No such
+comparison existed when this was written, and it is the part most likely to be useful to
+someone deciding between the two.
+
+## Why there is no Solidity package
+
+`packages/nextjs` is the only workspace, and `template.json` declares
+`solidityFramework: "none"` — a capability `create-scaffold-hbar` supports directly, so the
+template scaffolds cleanly without one.
+
+That is a design decision, not an omission. Payments settle as **native HTS token
+transfers**: the buyer signs a `TransferTransaction` of USDC, the server verifies it against
+the Mirror Node, and the charge is bound to its `402` challenge by a 32-byte attribution memo
+following [`draft-hedera-charge-00`](https://mpp.dev). A Solidity contract would add a deploy
+step, gas, an upgrade story and an audit surface to a flow that Hedera already does natively
+and more cheaply. There is nothing for a contract to hold, because the merchant is paid
+directly and no funds are ever escrowed.
+
+The Hedera services genuinely in play are **HTS** for the token transfers and the **Mirror
+Node** for settlement verification. If you fork this and do need a contract — escrow,
+splits, streaming — add `packages/hardhat` or `packages/foundry` in the usual Scaffold-HBAR
+layout; nothing here stands in the way.
 
 ## Create a project
 
