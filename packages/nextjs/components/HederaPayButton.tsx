@@ -4,8 +4,8 @@ import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Transaction } from "@hiero-ledger/sdk";
 import { useHederaSigner } from "~~/hooks/useHederaSigner";
-// SDK-free on purpose: importing these from `lib/hederaBuyer` would pull @hiero-ledger/sdk
-// into the first load of /checkout. The settlement code is imported on click instead.
+// SDK-free on purpose: anything imported here lands in the first load of /checkout, so the
+// settlement code — and @hiero-ledger/sdk with it — is imported on click instead.
 import { CheckoutError } from "~~/lib/checkoutCommon";
 import { hederaCaipId } from "~~/utils/scaffold-hbar/hederaIdentity";
 

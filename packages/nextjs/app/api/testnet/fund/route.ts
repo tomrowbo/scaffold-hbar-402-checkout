@@ -91,9 +91,9 @@ type Requested = { baseUnits: number } | { error: Response };
  * How much the buyer needs to end up holding.
  *
  * `amount` wins, then `product`. With neither, fall back to the priciest item — the only
- * safe answer when the caller has not said what is being bought. Both in-tree callers
- * (`lib/hederaBuyer.ts` and `scripts/e2e-charge.mjs`) pass the charge amount, so that
- * fallback is reached only by a hand-written request.
+ * safe answer when the caller has not said what is being bought. Its one in-tree caller
+ * (`scripts/e2e-charge.mjs`) passes the charge amount, so that fallback is reached only by a
+ * hand-written request.
  */
 function requestedBaseUnits(body: FundBody): Requested {
   const max = catalogueMaxBaseUnits();

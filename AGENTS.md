@@ -12,6 +12,7 @@ Use the package manager this project was created with (`packageManager` in the r
 yarn next:dev           # http://127.0.0.1:3000
 yarn next:build
 yarn next:check-types
+yarn test               # vitest, lib/*.test.ts — no credentials, no network
 yarn lint               # same as yarn next:lint
 yarn format
 ```
@@ -78,6 +79,18 @@ packages/nextjs/
   scaffold.config.ts      Target networks (testnet, mainnet), RPC, WalletConnect
   contracts/              deployedContracts.ts (empty — no Solidity workspace)
 ```
+
+## Tests
+
+`lib/*.test.ts`, run with `yarn test`, in CI alongside lint and types. Unit scope only: pure
+logic, no credentials, no network. **Add to it when you change `lib/mppx.ts`'s environment
+resolution, `lib/products.ts` or `lib/orders.ts`** — those are the three places this template
+has regressed, and the suite is mutation-checked, so reintroducing either of the historical
+bugs (a blank env var read with `??`, or the wrong testnet USDC) fails five tests.
+
+Do not write unit tests for settlement. `scripts/e2e-charge.mjs`, `e2e-x402.mjs` and
+`e2e-stripe.mjs` pay real challenges on testnet and in Stripe; a mocked Mirror Node or a
+stubbed facilitator would only assert that the stub matches itself.
 
 ## Conventions
 

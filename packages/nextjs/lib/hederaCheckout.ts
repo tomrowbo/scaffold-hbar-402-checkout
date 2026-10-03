@@ -1,21 +1,15 @@
 /**
  * Browser half of the Hedera charge rail: 402 → sign a USDC transfer → retry with the
- * credential. Client-only — it reads `localStorage` and the Hedera SDK's browser build.
+ * credential. Client-only.
  *
- * Two signing paths, because the storefront has two kinds of buyer:
+ * The connected wallet is the only signer. It executes the transfer and hands back a
+ * transaction id, and the server re-reads that transfer from the Mirror Node before issuing
+ * a receipt — so a client-supplied hash on its own buys nothing, and the buyer pays their own
+ * fee because the transaction id names their account.
  *
- *  - **Connected wallet (push):** the wallet executes the transfer and hands back a
- *    transaction id. The server confirms it on the Mirror Node.
- *  - **Injected burner key (pull):** the browser freezes and signs the transfer locally and
- *    the server submits it with the operator account. No gRPC-web from the page, which is
- *    the fragile part of driving Hedera from a browser, and the buyer still pays the fee
- *    because the frozen transaction id names their account.
- *
- * Either way the server re-reads the transfer from the Mirror Node before issuing a receipt,
- * so a client-supplied hash on its own buys nothing.
- *
- * Account resolution, the burner key and the testnet top-up are shared with the x402 rail
- * and live in `lib/hederaBuyer.ts`.
+ * The wallet reports the buyer's account and holds the key, so no account resolution, local
+ * key or testnet top-up is left in the browser. The x402 rail works the same way; it differs
+ * only in needing a transaction that is signed but not submitted (see `lib/x402Checkout.ts`).
  */
 // The wallet is the only browser signer now, so nothing here funds a buyer or reads a local
 // key — only the SDK-free helpers are needed.

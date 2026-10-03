@@ -66,6 +66,16 @@ buyer cannot submit the transaction itself, because the fee payer is named insid
 transaction id and has to be the facilitator's account. The template probes `/supported` at
 runtime and degrades the rail to demo mode rather than advertising an offer it cannot settle.
 
+**The agent that pays this is already in Hedera's agent tooling.** This template is the
+*server* side of MPP — it charges. The buyer side ships as
+[`hak-mppx-hedera-plugin`](https://www.npmjs.com/package/hak-mppx-hedera-plugin), an MPP
+plugin for [Hedera Agent Kit](https://github.com/hedera-dev/hedera-agent-kit) listed in Agent
+Kit's own [`docs/PLUGINS.md`](https://github.com/hedera-dev/hedera-agent-kit/blob/main/docs/PLUGINS.md),
+which gives an agent tools to pay a 402 charge and to open, spend and close a streaming
+session. I wrote and publish both halves. The template does not depend on Agent Kit — an
+agent needs no storefront code and the storefront needs no agent — but the pair is why the
+`402` this serves is payable by something other than a human with a card.
+
 Alongside them, [`docs/mpp-vs-x402.md`](docs/mpp-vs-x402.md) compares MPP and x402 line by
 line against the same product, the same amount and the same merchant account. No such
 comparison existed when this was written, and it is the part most likely to be useful to
@@ -774,6 +784,35 @@ returned as `orderId`/`receiptUrl` in the 200 body, and rendered on `/receipt/[i
 charges. [`docs/mpp-vs-x402.md`](docs/mpp-vs-x402.md) compares the two challenge formats line
 by line.
 
+## Tests
+
+```bash
+yarn test          # 39 unit tests, no credentials and no network
+yarn test:watch    # same, in watch mode
+```
+
+`lib/*.test.ts` covers the pure logic: catalogue invariants, environment resolution, the
+order store, and URL shaping. It runs in CI alongside lint and types.
+
+Nearly every case corresponds to a bug this template actually shipped, which is the only
+reason to assert anything about four hard-coded products. Three examples:
+
+- **Blank is not unset.** `.env.example` ships `HEDERA_RECIPIENT_ID=`, and `??` falls through
+  only on null. An untouched copy therefore advertised `recipient: ""`, which failed deep
+  inside the SDK with `failed to parse entity id:` *after* the buyer had been funded. The same
+  mistake was made three separate times, in three files, so it is pinned in both places it
+  can still occur.
+- **The right USDC.** Hedera testnet carries two tokens called "USD Coin", symbol USDC, 6
+  decimals, differing only in treasury. Defaulting to the other one meant a buyer funded from
+  faucet.circle.com held the wrong USDC and got `insufficient_balance` naming a token they
+  could see in their wallet.
+- **The mainnet guard.** Loading on mainnet with the public dev signing key throws, and the
+  test asserts the throw rather than trusting the comment above it.
+
+What is deliberately **not** unit-tested is settlement. `scripts/e2e-charge.mjs`,
+`e2e-x402.mjs` and `e2e-stripe.mjs` pay real challenges against testnet and Stripe, which is
+the only thing that proves a payment works; a mocked ledger would only test the mock.
+
 ## Going to production
 
 | Switch | Effect |
@@ -850,6 +889,7 @@ challenge, sign the USDC transfer, retry with the credential, read the receipt.
 | `yarn next:build` | Production build (about 70s from cold on a quiet machine) |
 | `yarn next:serve` | Serve the production build (`next start`). **This is the one to use for a production smoke test** — `yarn next:dev` is not it |
 | `yarn next:check-types` | TypeScript check |
+| `yarn test` | Unit tests (vitest) — no credentials, no network |
 | `yarn lint` | ESLint (prints a `next lint is deprecated` banner on Next 15; harmless) |
 | `yarn format` | Prettier |
 | `yarn make:burner [hbar]` | Create and fund a testnet burner buyer; prints its account id and private key. Needs `HEDERA_OPERATOR_*` set |
