@@ -103,9 +103,7 @@ Run that in a terminal and the scaffolder prompts for a project directory to cre
 
 Without an interactive terminal — CI, a container, a coding agent — that prompt has nowhere
 to read from and the scaffolder exits with `ERR_TTY_INIT_FAILED: TTY initialization failed`.
-That is `create-scaffold-hbar` wanting a directory name rather than anything about this
-template; the built-in templates do the same. So pass the directory yourself, and `--yes` to
-take the remaining defaults:
+Pass the directory yourself, and `--yes` to take the remaining defaults:
 
 ```bash
 npm create scaffold-hbar@latest -- my-store --template tomrowbo/scaffold-hbar-402-checkout --yes
