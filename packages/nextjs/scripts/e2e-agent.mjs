@@ -1,8 +1,10 @@
 // Pays /api/pay as an AI agent, through Hedera Agent Kit.
 //
-// The fourth sibling of e2e-charge.mjs, e2e-x402.mjs and e2e-stripe.mjs, and the one that
-// demonstrates what the storefront is actually for. The others drive a protocol client
-// directly. This one hands the job to an *agent tool* — `mppx_hedera_charge_fetch_tool` from
+// The fourth sibling of e2e-charge.mjs, e2e-x402.mjs and e2e-stripe.mjs — a fourth buyer, not
+// a fourth rail. It pays over MPP's `hedera` charge method, the same rail e2e-charge.mjs and
+// the Hedera MPP button use, settling the same HTS transfer with the same attribution memo
+// through the same server code. The difference is who is buying: the others drive a protocol
+// client directly, and this one hands the purchase to an *agent tool* — `mppx_hedera_charge_fetch_tool` from
 // `hak-mppx-hedera-plugin`, the MPP plugin listed in Hedera Agent Kit's own docs — and the
 // tool discovers the 402, decides whether the price is within budget, pays, and returns the
 // goods. The storefront is not told an agent is calling and needs no agent-specific code.

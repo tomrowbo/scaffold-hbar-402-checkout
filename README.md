@@ -607,9 +607,9 @@ the operator is not configured, `403` off testnet.
 
 **Say what is being bought.** With neither `amount` nor `product` the route has to assume the
 priciest item in the catalogue (2.00 USDC), because it has nothing else to go on — and an
-operator that could comfortably cover a $0.50 mug is then refused for want of 64. Both
-in-tree callers (`lib/hederaBuyer.ts` and `scripts/e2e-charge.mjs`) pass the charge amount; a
-hand-written `curl` should too.
+operator that could comfortably cover a $0.50 mug is then refused for want of 64. Its one
+in-tree caller (`scripts/e2e-charge.mjs`) passes the charge amount; a hand-written `curl`
+should too.
 
 The operator must itself hold enough testnet USDC to pay out — the faucet is a convenience
 over the operator's balance, not a mint. When it does not, the route says so by name:
@@ -834,8 +834,11 @@ yarn e2e:agent <that-key> hashgraph-mug
   receipt:     http://127.0.0.1:3000/receipt/JMIT4CWpYwtmKAoCp6DPNFo7kdi1VZC4xw6mIHfFed4
 ```
 
-This is the rail the storefront exists for, and it is the only one where the buyer is not a
-person. `scripts/e2e-agent.mjs` hands the whole job to an *agent tool* —
+**This is not a fourth rail.** The tool pays over MPP's `hedera` charge method — the same
+rail as `yarn e2e:charge` and the Hedera MPP button, settling the same HTS transfer with the
+same attribution memo, verified by the same server code. There are still three rails: card,
+MPP and x402. What this adds is a fourth *buyer*, and it is the only one that is not a
+person. `scripts/e2e-agent.mjs` hands the purchase to an *agent tool* —
 `mppx_hedera_charge_fetch_tool` from
 [`hak-mppx-hedera-plugin`](https://www.npmjs.com/package/hak-mppx-hedera-plugin), the MPP
 plugin listed in [Hedera Agent Kit's own docs](https://github.com/hedera-dev/hedera-agent-kit/blob/main/docs/PLUGINS.md)
@@ -983,8 +986,7 @@ packages/nextjs/
   lib/
     demo.ts               hasHedera() / hasStripe() / hasX402() — per-rail detection
     mppx.ts               MPP server: both charge methods, one challenge
-    hederaCheckout.ts     Browser half of the Hedera rail (402 → sign → retry)
-    hederaBuyer.ts        Buyer primitives both browser rails share (account, key, faucet)
+    hederaCheckout.ts     Browser half of the Hedera MPP rail (402 → wallet signs → retry)
     hederaOperator.ts     Operator client and resolvedNetwork()
     orders.ts             Settled-order store: MPP challenge ids and minted x402 references
     x402.ts               Facilitator capability probe, canSettleX402(), verify/settle calls
