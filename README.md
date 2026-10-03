@@ -911,7 +911,7 @@ Orders are held in an in-memory `Map` keyed by challenge id (`lib/orders.ts`). T
 for one `next start` process; swap `orderStore()` for Redis, Postgres or mppx's
 `Store.Store` before running more than one instance.
 
-## Paying as an agent
+## Discovering the store as an agent
 
 An agent that has never seen this store can discover it from two conventional URLs, before it
 knows anything about the catalogue:
