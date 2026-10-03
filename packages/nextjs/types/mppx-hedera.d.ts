@@ -46,7 +46,7 @@ declare module "mppx-hedera" {
   }
 
   export const USDC_DECIMALS: number;
-  /** EVM alias of testnet USDC (`0x…1549`), not the `0.0.5449` native token id the charge intent uses. */
+  /** EVM alias of a testnet USDC, not the native `0.0.x` token id a charge intent uses. */
   export const USDC_TESTNET: string;
   /** EVM alias of mainnet USDC (`0x…6f89a`), not the `0.0.456858` native token id. */
   export const USDC_MAINNET: string;

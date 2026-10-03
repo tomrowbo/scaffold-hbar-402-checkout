@@ -7,20 +7,18 @@
  * `scripts/e2e-x402.mjs` drives it from Node. This module's own job is the three things that
  * stack does not do for you:
  *
- *  1. **Find the buyer.** x402's signer takes an account id and a key; the storefront has a
- *     key in `localStorage` and an EVM alias to resolve it from (see `lib/hederaBuyer.ts`).
- *  2. **Fund the buyer.** The offer is denominated in an HTS token a fresh test account has
- *     neither associated nor any balance of. Shared with the MPP rail.
- *  3. **Opt into the spend.** Two client-side controls reject this offer by default, and
- *     both are the buyer's policy rather than anything the server got wrong: `@x402/hedera`
- *     treats `0.0.429274` as the only testnet USDC while this store charges in `0.0.5449`,
- *     and `@x402/core` caps a single payment at $1. Allowing exactly the offered token at
- *     exactly the offered amount opts into this one purchase and nothing more.
+ *  1. **Find the buyer.** The connected wallet is the buyer: it reports the account id and
+ *     it holds the key. Nothing is stored in the page (see `lib/x402WalletSigner.ts`).
+ *  2. **Opt into the spend.** `@x402/core` caps a single payment at $1 by default and the
+ *     catalogue goes above that, so the cap has to be raised to take this offer. That is the
+ *     buyer's own policy rather than anything the server got wrong, and it is scoped to
+ *     exactly the offered asset and amount — this one purchase and nothing more.
  *
- * There is no connected-wallet path here, unlike the MPP rail. x402's `exact` scheme on
- * Hedera needs a *partially signed* transaction whose transaction id names the facilitator's
- * sponsored fee payer, and WalletConnect's Hedera methods sign-and-execute rather than
- * hand back signed bytes. A burner key is the only signer this rail can drive from a page.
+ * Both rails are paid from a connected wallet. x402's `exact` scheme needs a *partially
+ * signed* transaction whose transaction id names the facilitator's sponsored fee payer, so
+ * `hedera_signAndExecuteTransaction` is no use — it submits, under the wallet's own id.
+ * `hedera_signTransaction` returns signed bytes and broadcasts nothing, which is exactly what
+ * this rail needs, and it is why no local key is involved.
  */
 // Only the SDK-free half — the wallet signs, so nothing here needs @hiero-ledger/sdk and the
 // buyer is never funded from the operator: they pay with what the wallet holds.
