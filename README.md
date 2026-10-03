@@ -96,14 +96,22 @@ layout; nothing here stands in the way.
 `.yarnrc.yml`, so `corepack enable` is enough — you do not install it yourself).
 
 ```bash
-npm create scaffold-hbar@latest -- my-store --template tomrowbo/scaffold-hbar-402-checkout
+npm create scaffold-hbar@latest -- --template tomrowbo/scaffold-hbar-402-checkout
 ```
 
-`my-store` is the directory to create — name it whatever you like. Leave it out and the
-scaffolder prompts for it, which fails outright with
-`ERR_TTY_INIT_FAILED: TTY initialization failed` anywhere without an interactive terminal (CI,
-a coding agent, most containers). Add `--yes` to accept the remaining defaults without
-prompts.
+Run that in a terminal and the scaffolder prompts for a project directory to create.
+
+Without an interactive terminal — CI, a container, a coding agent — that prompt has nowhere
+to read from and the scaffolder exits with `ERR_TTY_INIT_FAILED: TTY initialization failed`.
+That is `create-scaffold-hbar` wanting a directory name rather than anything about this
+template; the built-in templates do the same. So pass the directory yourself, and `--yes` to
+take the remaining defaults:
+
+```bash
+npm create scaffold-hbar@latest -- my-store --template tomrowbo/scaffold-hbar-402-checkout --yes
+```
+
+`my-store` is the directory to create — name it whatever you like.
 
 `npm create` here runs the *scaffolder*
 ([`create-scaffold-hbar`](https://github.com/hedera-dev/create-scaffold-hbar)), which fetches
