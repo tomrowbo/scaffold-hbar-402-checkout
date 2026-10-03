@@ -16,7 +16,8 @@
     "serve": "next start",
     "start": "next start",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "e2e:agent": "node --env-file-if-exists=.env scripts/e2e-agent.mjs"
   },
   "dependencies": {
     "@hashgraph/hedera-wallet-connect": "^2.1.1",
@@ -41,7 +42,7 @@
     "daisyui": "^5.0.9",
     "ethers": "^6.16.0",
     "mppx": "0.10.1",
-    "mppx-hedera": "^0.3.0",
+    "mppx-hedera": "^0.3.1",
     "next": "^15.2.8",
     "next-nprogress-bar": "^2.3.13",
     "next-themes": "^0.3.0",
@@ -59,6 +60,7 @@
     "zustand": "^5.0.0"
   },
   "devDependencies": {
+    "@hashgraph/hedera-agent-kit": "^4.1.0",
     "@tailwindcss/postcss": "latest",
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
     "@types/node": "^18.19.50",
@@ -68,6 +70,7 @@
     "eslint-config-next": "^15.2.3",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-prettier": "^5.2.4",
+    "hak-mppx-hedera-plugin": "^1.2.1",
     "postcss": "^8.4.45",
     "prettier": "^3.5.3",
     "tailwindcss": "^4.1.3",

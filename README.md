@@ -813,6 +813,62 @@ What is deliberately **not** unit-tested is settlement. `scripts/e2e-charge.mjs`
 `e2e-x402.mjs` and `e2e-stripe.mjs` pay real challenges against testnet and Stripe, which is
 the only thing that proves a payment works; a mocked ledger would only test the mock.
 
+## Paying as an agent (Hedera Agent Kit)
+
+```bash
+yarn make:burner                       # a funded ECDSA buyer
+yarn e2e:agent <that-key> hashgraph-mug
+```
+
+```
+1. agent: 0.0.10840972
+2. tool:  mppx_hedera_charge_fetch_tool
+3. budget: 1000000 base units
+4. calling http://127.0.0.1:3000/api/pay?product=hashgraph-mug — the tool handles the 402 itself…
+
+5. tool result: Paid 500000 USDC (base units) and received data from …
+
+✓ the agent bought Hashgraph Mug for 0.50 USDC
+  transaction: 0.0.10840972@1791026005.309986866
+  hashscan:    https://hashscan.io/testnet/transaction/0.0.10840972@1791026005.309986866
+  receipt:     http://127.0.0.1:3000/receipt/JMIT4CWpYwtmKAoCp6DPNFo7kdi1VZC4xw6mIHfFed4
+```
+
+This is the rail the storefront exists for, and it is the only one where the buyer is not a
+person. `scripts/e2e-agent.mjs` hands the whole job to an *agent tool* —
+`mppx_hedera_charge_fetch_tool` from
+[`hak-mppx-hedera-plugin`](https://www.npmjs.com/package/hak-mppx-hedera-plugin), the MPP
+plugin listed in [Hedera Agent Kit's own docs](https://github.com/hedera-dev/hedera-agent-kit/blob/main/docs/PLUGINS.md)
+— which discovers the `402`, decides whether the price is within budget, pays, and returns
+the goods.
+
+**The server is not told an agent is calling.** There is no agent branch in `/api/pay`, no
+user-agent sniffing and no second endpoint. A `402` challenge is a machine-readable price, so
+anything that can read one can buy — which is the entire claim this template is making, and
+the reason it is worth running this script rather than reading about it.
+
+**No LLM and no API key.** Agent Kit tools expose `execute(client, context, params)`, so the
+tool runs the same code path an LLM-driven agent would without a model having to choose to
+call it. Handing the same tool to a model is the only difference, and that is the model's
+business rather than this template's.
+
+**The budget is real.** `AGENT_MAX_AMOUNT` is a cap in base units, and the tool compares the
+challenge's price against it *before* signing anything:
+
+```bash
+AGENT_MAX_AMOUNT=100000 yarn e2e:agent <key> consensus-hoodie
+# 5. tool result: Payment too expensive: server wants 2000000 base units but max is 100000.
+# ✗ the agent did not pay: Amount exceeds budget
+```
+
+Nothing moves on chain in that run. An agent that cannot refuse a price is not something you
+want holding a key.
+
+> Needs `mppx-hedera` ≥ 0.3.1. Two defects below that version made this exact flow pay and
+> then fail verification — the EVM alias named a different testnet USDC than the native token
+> id, and push-mode verification read the wrong Mirror Node record when a fresh buyer
+> auto-associated the token on its first payment. Both debited the buyer and returned `402`.
+
 ## Going to production
 
 | Switch | Effect |
@@ -890,6 +946,7 @@ challenge, sign the USDC transfer, retry with the credential, read the receipt.
 | `yarn next:serve` | Serve the production build (`next start`). **This is the one to use for a production smoke test** — `yarn next:dev` is not it |
 | `yarn next:check-types` | TypeScript check |
 | `yarn test` | Unit tests (vitest) — no credentials, no network |
+| `yarn e2e:agent <key>` | Pay as an AI agent, through Hedera Agent Kit |
 | `yarn lint` | ESLint (prints a `next lint is deprecated` banner on Next 15; harmless) |
 | `yarn format` | Prettier |
 | `yarn make:burner [hbar]` | Create and fund a testnet burner buyer; prints its account id and private key. Needs `HEDERA_OPERATOR_*` set |

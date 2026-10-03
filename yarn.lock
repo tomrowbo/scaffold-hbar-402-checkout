@@ -12,7 +12,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@adraffy/ens-normalize@npm:^1.10.1, @adraffy/ens-normalize@npm:^1.11.0":
+"@adraffy/ens-normalize@npm:1.11.1, @adraffy/ens-normalize@npm:^1.10.1, @adraffy/ens-normalize@npm:^1.11.0":
   version: 1.11.1
   resolution: "@adraffy/ens-normalize@npm:1.11.1"
   checksum: e8b17fcc730ccc45a956e1fbb09edfe42be41c291079512082e9964f8ef4287e67913183cdd02fff71d2e215340d5b98a9bbbd9be32c5d36fad4ba2c1ec33ff2
@@ -864,6 +864,21 @@ __metadata:
   bin:
     proto-loader-gen-types: build/bin/proto-loader-gen-types.js
   checksum: 9f19f4c611a17cd33aec0d6e3686a76696495f40593f7c284933c4b7877f58dfa5a225ddc20705860a632311f4dc0d143cb6a0da7b51b6f5ffd7de26938df308
+  languageName: node
+  linkType: hard
+
+"@hashgraph/hedera-agent-kit@npm:^4.1.0":
+  version: 4.1.0
+  resolution: "@hashgraph/hedera-agent-kit@npm:4.1.0"
+  dependencies:
+    bignumber.js: 9.3.1
+    ethers: 6.17.0
+    long: 5.3.2
+    zod: 3.25.76
+    zod-to-json-schema: 3.25.2
+  peerDependencies:
+    "@hiero-ledger/sdk": ^2.86.2
+  checksum: b909e43d07f67be8c9d5265ea79251452e747440da417ef0f41970788e58cbb00b54fd2a622a435df4d29b55f091bbe5fcb23ac40dac296802a349444afdc6e8
   languageName: node
   linkType: hard
 
@@ -2702,6 +2717,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sh/nextjs@workspace:packages/nextjs"
   dependencies:
+    "@hashgraph/hedera-agent-kit": ^4.1.0
     "@hashgraph/hedera-wallet-connect": ^2.1.1
     "@heroicons/react": ^2.1.5
     "@hiero-ledger/sdk": ^2.80.0
@@ -2732,8 +2748,9 @@ __metadata:
     eslint-config-prettier: ^10.1.1
     eslint-plugin-prettier: ^5.2.4
     ethers: ^6.16.0
+    hak-mppx-hedera-plugin: ^1.2.1
     mppx: 0.10.1
-    mppx-hedera: ^0.3.0
+    mppx-hedera: ^0.3.1
     next: ^15.2.8
     next-nprogress-bar: ^2.3.13
     next-themes: ^0.3.0
@@ -5334,7 +5351,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bignumber.js@npm:^9.1.2":
+"bignumber.js@npm:9.3.1, bignumber.js@npm:^9.1.2":
   version: 9.3.1
   resolution: "bignumber.js@npm:9.3.1"
   checksum: 6ab100271a23a75bb8b99a4b1a34a1a94967ac0b9a52a198147607bd91064e72c6f356380d7a09cd687bf50d81ad2ed1a0a8edfaa90369c9003ed8bb2440d7f0
@@ -6953,6 +6970,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ethers@npm:6.17.0":
+  version: 6.17.0
+  resolution: "ethers@npm:6.17.0"
+  dependencies:
+    "@adraffy/ens-normalize": 1.11.1
+    "@noble/curves": 1.2.0
+    "@noble/hashes": 1.3.2
+    "@types/node": 22.7.5
+    aes-js: 4.0.0-beta.5
+    tslib: 2.7.0
+    ws: 8.21.0
+  checksum: 0ba314af2ae25622c60886caf83d825ce543262685961667d166b825c9dbfc66f905e0d7a2e3d8d4ccfa58b6ac20326e7f9a897b5580879efa758a50067ad082
+  languageName: node
+  linkType: hard
+
 "eventemitter3@npm:5.0.1":
   version: 5.0.1
   resolution: "eventemitter3@npm:5.0.1"
@@ -7439,6 +7471,20 @@ __metadata:
     ufo: ^1.6.3
     uncrypto: ^0.1.3
   checksum: 455f58681de2b789b39af45067db8dde35234c18d86ec5068687300aae3c0225f85edcd110906493e087407e2caaa1f292352769c484284e72558d7677c29899
+  languageName: node
+  linkType: hard
+
+"hak-mppx-hedera-plugin@npm:^1.2.1":
+  version: 1.2.1
+  resolution: "hak-mppx-hedera-plugin@npm:1.2.1"
+  peerDependencies:
+    "@hashgraph/hedera-agent-kit": ">=4.0.0"
+    "@hiero-ledger/sdk": ">=2.81.0"
+    mppx: ">=0.5.9"
+    mppx-hedera: ">=0.2.1"
+    viem: ">=2.21.0"
+    zod: ">=3.0.0"
+  checksum: 2f175e5ef646171b41712eba334ca0971983d4565501c6a73a44aee514a19f45e829aff7798daf8e9f02840b93cf12bfe1fcbd16a8cae84260944f40b5f4d7ea
   languageName: node
   linkType: hard
 
@@ -8653,7 +8699,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"long@npm:^5.0.0, long@npm:^5.3.2":
+"long@npm:5.3.2, long@npm:^5.0.0, long@npm:^5.3.2":
   version: 5.3.2
   resolution: "long@npm:5.3.2"
   checksum: be215816b563f4ca27ad3677678b53415bc489f9e3466414e54d2d85f5f8e86768547fa58493bacfb363ffc57a664debc83403ccc2178aef0c40aca28bad47c9
@@ -8965,14 +9011,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mppx-hedera@npm:^0.3.0":
-  version: 0.3.0
-  resolution: "mppx-hedera@npm:0.3.0"
+"mppx-hedera@npm:^0.3.1":
+  version: 0.3.1
+  resolution: "mppx-hedera@npm:0.3.1"
   peerDependencies:
     "@hiero-ledger/sdk": ">=2.50.0"
     mppx: ">=0.5.9"
     viem: ">=2.21.0"
-  checksum: 0ffae1d795e18dc27bcd3d6c4d42e5e089f7efdb0d96e93b3ea4ecc9ac0a306118e4c1e3ef9e530fb8a2764591b1a1bfa81a0562f6a5b0b21b7378cd21f1908d
+  checksum: f868174e5ad700804554a37f2563fe3f1d2e6ae5b7f7d106f1cfc8e78880327c309aa47a5cd489a10b9dbcb10b94907bd45f4c0d665ff1462d91467436962392
   languageName: node
   linkType: hard
 
@@ -12351,6 +12397,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ws@npm:8.21.0":
+  version: 8.21.0
+  resolution: "ws@npm:8.21.0"
+  peerDependencies:
+    bufferutil: ^4.0.1
+    utf-8-validate: ">=5.0.2"
+  peerDependenciesMeta:
+    bufferutil:
+      optional: true
+    utf-8-validate:
+      optional: true
+  checksum: 83ff89ae011bc5c3c5605a45a0d50e12589143c7500ca4de83a8d43b3cd26e71f422cb3206fd1a9e6d541d666eeb66255c30d095d62d413b3c7afe5d2c5cb928
+  languageName: node
+  linkType: hard
+
 "ws@npm:^7.5.1, ws@npm:^7.5.10":
   version: 7.5.10
   resolution: "ws@npm:7.5.10"
@@ -12507,6 +12568,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"zod-to-json-schema@npm:3.25.2":
+  version: 3.25.2
+  resolution: "zod-to-json-schema@npm:3.25.2"
+  peerDependencies:
+    zod: ^3.25.28 || ^4
+  checksum: 8b728476374a38711e0ca5c066be16ed8facf5a5eb5a76f371b0062e5b6b11f906f446c616d6879b9a4d373738c74cd26e4dfe1d460e7fb9a155a3fe9d04b690
+  languageName: node
+  linkType: hard
+
 "zod@npm:3.22.4":
   version: 3.22.4
   resolution: "zod@npm:3.22.4"
@@ -12514,7 +12584,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:^3.24.2, zod@npm:^3.24.4":
+"zod@npm:3.25.76, zod@npm:^3.24.2, zod@npm:^3.24.4":
   version: 3.25.76
   resolution: "zod@npm:3.25.76"
   checksum: c9a403a62b329188a5f6bd24d5d935d2bba345f7ab8151d1baa1505b5da9f227fb139354b043711490c798e91f3df75991395e40142e6510a4b16409f302b849

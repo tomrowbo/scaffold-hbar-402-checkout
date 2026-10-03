@@ -13,6 +13,7 @@ yarn next:dev           # http://127.0.0.1:3000
 yarn next:build
 yarn next:check-types
 yarn test               # vitest, lib/*.test.ts — no credentials, no network
+yarn e2e:agent <key>    # pay /api/pay as an agent, via Hedera Agent Kit
 yarn lint               # same as yarn next:lint
 yarn format
 ```
